@@ -1,0 +1,8 @@
+[workspace]
+members = [
+    "crates/arx",
+    "crates/tripolys",
+]
+
+[profile.release]
+debug = true

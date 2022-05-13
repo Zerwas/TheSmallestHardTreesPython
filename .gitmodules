@@ -1,0 +1,3 @@
+[submodule "tripolys_data"]
+	path = data
+	url = https://gitlab.com/WhatDothLife/tripolys_data.git
