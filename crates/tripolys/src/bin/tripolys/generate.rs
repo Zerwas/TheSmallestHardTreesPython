@@ -22,7 +22,7 @@ pub fn cli() -> App<'static, 'static> {
     App::new("generate")
         .version("1.0")
         .author("Michael W. <michael.wernthaler@posteo.de>")
-        .about("Generate trees with a certain number of vertices")
+        .about("Generate trees with a given number of vertices")
         .arg(
             Arg::with_name("core")
                 .long("core")
