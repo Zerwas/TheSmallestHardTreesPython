@@ -1,18 +1,29 @@
 Tripolys
 ====================================
 
-A program for checking homo-/polymorphisms of graphs.
+A program for checking homomorphisms and testing polymorphism conditions of directed graphs. Also implements an algorithm to generate orientations of trees, and core orientations of trees. 
 
-This repository contains companion code for the following paper: TODO
+This repository contains companion code for the following paper. If you use this code, please cite the paper. You can use the bibtex reference below. (TODO update once published)
 
-M. Bodirsky, J. Bulín, F. Starke, M. Wernthaler. The smallest hard trees 
-<!-- *Statistics and Computing* **32**, 17 (2022). -->
-
-If you use this code please cite the paper using the bibtex reference below. TODO
+_M. Bodirsky, J. Bulín, F. Starke, and M. Wernthaler. The smallest hard trees, arXiv:2205.07528 [math.RA] (May 2022)_
+https://doi.org/10.48550/arXiv.2205.07528
+ 
+```
+@misc{https://doi.org/10.48550/arxiv.2205.07528,
+  doi = {10.48550/ARXIV.2205.07528},  
+  url = {https://arxiv.org/abs/2205.07528},  
+  author = {Bodirsky, Manuel and Bulín, Jakub and Starke, Florian and Wernthaler, Michael},  
+  keywords = {Rings and Algebras (math.RA), FOS: Mathematics, FOS: Mathematics, G.2.2, 08A70, 08B05},  
+  title = {The Smallest Hard Trees},  
+  publisher = {arXiv},  
+  year = {2022},  
+  copyright = {Creative Commons Attribution Non Commercial Share Alike 4.0 International}
+}
+```
 
 Introduction
 -----------------
-In the paper *The Smallest Hard Trees* we propose... TODO
+In the paper *The Smallest Hard Trees*, we study computational and descriptive complexity of fixed-template CSPs for small orientations of trees. The paper contains a number of experimental results (see Section 7). Below you can find the commands to reproduce those results.
 
 Installation
 -----------------
@@ -23,30 +34,40 @@ git clone https://gitlab.com/WhatDothLife/tripolys.git
 cd tripolys
 cargo build --release
 ```
+The executable can be found in `./target/release/tripolys`.
 
+<!--
 Data
 -----------------
+-->
 <!-- The slurm-scripts to reproduce the main experiments are in the subfolders under -->
 <!-- "scripts". You may need to modify the path to the data folder via the -->
 <!-- argument `data_path`. -->
 
+
 Usage
 -----------------
-- Generate all trees with n vertices (see Section 7 and Table 2):
 
+
+### Generate small trees and core trees
+
+In Section 4, we introduce algorithms to generate small trees and core trees. The numbers of such trees are given in Table 2 in Section 7.
+
+- Generate all trees with number of vertices between `n` and `m`:
 ```
-  ./tripolys generate -s n -e n
+  ./tripolys generate -s n -e m
 ```
 
-- Generate all core trees with n vertices (see Section 7 and Table 2):
+- Generate all core trees with number of vertices between `n` and `m`:
   
 ```
-  ./tripolys generate -s n -e n --core
+  ./tripolys generate -s n -e m --core
 ```
 
-7.1.1. The smallest NP-hard trees: 
------------------
-The trees are [here](file:data/20/no_siggers.csv ) and this is how you can test them:
+### The smallest NP-hard trees (Section 7.1.1) 
+
+The trees can be found [here](file:data/20/no_siggers.csv ). (TODO put the data there)
+To reproduce the result, run the following sequence of commands:
 
 ```
 ./tripolys polymorphism --input cores.edges --output no_2wnu.csv --condition 2wnu --filter deny
@@ -54,26 +75,41 @@ The trees are [here](file:data/20/no_siggers.csv ) and this is how you can test 
 ./tripolys polymorphism --input no_3wnu.csv --output no_kmm.csv --condition kmm --filter deny
 ```
 
-The smallest NP-hard triads: TODO link edge lists here?
+We also found the smallest NP-hard triads: (TODO link edge lists here? TODO how to generate small triads?)
+
 ```
 ./tripolys polymorphism --graph 10110000,0101111,100111 --condition kmm
 ./tripolys polymorphism --graph 10110000,1001111,010111 --condition kmm
 ```
 
 
-7.1.2. TODO
------------------
+### The smallest NL-hard trees (Section 7.1.2)
 
-7.2.1 A Tree not known to be in NL: 
------------------
+TODO
+
+### The smallest tree not solved by Datalog (Section 7.1.3)
+
+TODO
+
+### The smallest tree not solved by Arc Consistency (Section 7.1.4)
+
+TODO
+
+### A tree not known to be in NL (Section 7.2.1)
+
 The trees not known to be in NL are [here](https://gitlab.com/WhatDothLife/tripolys_data/-/blob/master/16/no_majority.csv) and this is how you can test them:
 
 ```
 cd data/16
 ./tripolys polymorphism --input cores.edges --output no_majority.csv --condition majority --filter deny
 ```
+(TODO how to run the tests for KK, HMcK, J?)
 
-Other examples
+### Trees that might be P-hard (Section 7.2.2)  
+
+TODO
+
+Other usage examples
 -----------------
 Use --help
 
