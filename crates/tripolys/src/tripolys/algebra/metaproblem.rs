@@ -2,7 +2,7 @@ use arx::problem::*;
 use itertools::Itertools;
 
 use crate::colouring::ColouringProblem;
-use crate::digraph::AdjMap;
+use crate::digraph::{AdjMap, levels};
 use crate::tree::{Tree, Balanced};
 
 use super::conditions::{Linear, Tuple, Vertex};
@@ -39,19 +39,18 @@ impl<V: Vertex> MetaProblem<V> {
         MetaProblem { problem }
     }
 
-    pub fn from_tree<T, C>(t: &T, condition: C) -> MetaProblem<u32>
+    pub fn from_balanced<C>(h: &AdjMap<u32>, condition: C) -> MetaProblem<u32>
     where
-        T: Tree + Balanced,
         C: Linear,
     {
-        let h = t.to_graph();
+        let levels = levels(&h).unwrap();
 
         let mut indicator = condition
             .arities()
             .into_iter()
             .enumerate()
             .flat_map(|(i, k)| h.edge_iter().power(k).map(move |(u, v)| ((i, u), (i, v))))
-            .filter(|((_, u), _)| u.iter().map(|v| t.level(v).unwrap()).all_equal())
+            .filter(|((_, u), _)| u.iter().map(|v| levels[*v as usize]).all_equal())
             .collect::<AdjMap<_>>();
 
         for set in condition.partition(h.vertex_iter().collect::<Vec<_>>()) {

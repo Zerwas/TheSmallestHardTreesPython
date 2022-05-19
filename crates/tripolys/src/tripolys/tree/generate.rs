@@ -1,7 +1,7 @@
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
-use crate::tree::{is_core, is_rooted_core, Node};
+use crate::tree::{is_core_tree, is_rooted_core_tree, Node};
 use itertools::Itertools;
 use rayon::prelude::*;
 
@@ -73,7 +73,7 @@ impl Generator {
                 let filtered = treenagers
                     .into_par_iter()
                     .filter_map(|child| {
-                        if !self.config.core || is_rooted_core(&child) {
+                        if !self.config.core || is_rooted_core_tree(&child) {
                             Some(Arc::new(child))
                         } else {
                             None
@@ -154,7 +154,7 @@ impl Generator {
         let mut cc_time = Duration::from_secs(0);
         let mut filter = |t: &Node| {
             let start = Instant::now();
-            let p = is_core(t);
+            let p = is_core_tree(t);
             cc_time += start.elapsed();
             p
         };

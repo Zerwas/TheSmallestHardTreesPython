@@ -1,15 +1,15 @@
 //! Identities that are satisfied by polymorphisms.
 
 // mod custom;
+mod hageman_mitschke;
 mod jonsson;
 mod kiss_kearnes;
 mod kmm;
+mod maltsev;
 mod near_unamity;
 mod noname;
 mod siggers;
 mod sigma;
-mod maltsev;
-mod hageman_mitschke;
 
 pub use jonsson::Jonsson;
 pub use kiss_kearnes::KearnesKiss;
@@ -22,9 +22,9 @@ pub use sigma::Sigma;
 use std::fmt::Debug;
 use std::hash::Hash;
 
-pub trait Vertex: Copy + Hash + Eq + Debug + Send + Sync {}
+pub trait Vertex: Copy + Hash + Eq + Debug + Send + Sync + Ord {}
 
-impl<V> Vertex for V where V: Copy + Hash + Eq + Debug + Send + Sync {}
+impl<V> Vertex for V where V: Copy + Hash + Eq + Debug + Send + Sync + Ord {}
 
 pub type Arity = usize;
 pub type Set<V> = Vec<V>;

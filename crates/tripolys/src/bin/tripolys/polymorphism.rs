@@ -6,7 +6,7 @@ use rayon::prelude::*;
 use serde::ser::SerializeStruct;
 use serde::{Serialize, Serializer};
 use time::Duration;
-use tripolys::tree::{Triad, Tree, Node};
+use tripolys::tree::{Node, Tree, Triad};
 
 use std::fmt::Display;
 use std::path::Path;
@@ -54,10 +54,10 @@ pub fn cli() -> App<'static, 'static> {
                 .required_unless("list"),
         )
         .arg(
-            Arg::with_name("balanced")
-                .short("b")
-                .long("balanced")
-                .help("Optimize based on the promise that H is balanced"),
+            Arg::with_name("level-wise")
+                .short("L")
+                .long("level-wise")
+                .help("Test for level-wise satisfiability"),
         )
         .arg(
             Arg::with_name("graph")
@@ -93,7 +93,7 @@ pub fn cli() -> App<'static, 'static> {
                 .takes_value(true)
                 .value_name("PREDICATE")
                 .possible_values(&["deny", "admit"])
-                .help("Only write graphs to results if they deny/admit a polymorphism"),
+                .help("Filter graphs which deny/admit a polymorphism"),
         )
 }
 
@@ -131,7 +131,17 @@ pub fn command(args: &ArgMatches) -> CmdResult {
         let start = std::time::Instant::now();
 
         graphs.into_par_iter().for_each(|item| {
-            let problem = create_meta_problem(&item.to_graph(), condition).unwrap();
+            let mut problem = if args.is_present("level-wise") {
+                create_meta_problem_tree(&item, condition).unwrap()
+            } else {
+                create_meta_problem(&item, condition).unwrap()
+            };
+            if conservative {
+                problem.conservative();
+            }
+            if idempotent {
+                problem.idempotent();
+            }
             let mut solver = BTSolver::new(&problem);
             let found = solver.solution_exists();
 
@@ -161,10 +171,13 @@ pub fn command(args: &ArgMatches) -> CmdResult {
         return Ok(());
     }
 
-    // let h = parse_graph(args.value_of("graph").unwrap())?;
-    // let h = Triad::from_str(args.value_of("graph").unwrap())?;
-    let h = Node::from_str(args.value_of("graph").unwrap())?;
-    let mut problem = create_meta_problem_tree(&h, condition)?;
+    let h = parse_graph(args.value_of("graph").unwrap())?;
+    let mut problem = if args.is_present("level-wise") {
+        create_meta_problem_tree(&h, condition)?
+    } else {
+        create_meta_problem(&h, condition)?
+    };
+
     if conservative {
         problem.conservative();
     }
@@ -227,21 +240,24 @@ fn create_meta_problem(h: &AdjMap<u32>, s: &str) -> Result<MetaProblem<u32>, Par
     }
 }
 
-fn create_meta_problem_tree<T: Tree>(t: &T, s: &str) -> Result<MetaProblem<u32>, ParseConditionError> {
+fn create_meta_problem_tree(
+    h: &AdjMap<u32>,
+    s: &str,
+) -> Result<MetaProblem<u32>, ParseConditionError> {
     match s {
-        "majority" => Ok(MetaProblem::<u32>::from_tree(t, Majority)),
-        "siggers" => Ok(MetaProblem::<u32>::from_tree(t, Siggers)),
-        "kmm" => Ok(MetaProblem::<u32>::from_tree(t, Kmm)),
+        "majority" => Ok(MetaProblem::<u32>::from_balanced(h, Majority)),
+        "siggers" => Ok(MetaProblem::<u32>::from_balanced(h, Siggers)),
+        "kmm" => Ok(MetaProblem::<u32>::from_balanced(h, Kmm)),
         _ => {
             if let Some((pr, su)) = s.split_once('-') {
                 if let Ok(pr) = pr.parse() {
                     match su {
-                        "wnu" => Ok(MetaProblem::<u32>::from_tree(t, Wnu(pr))),
-                        "nu" => Ok(MetaProblem::<u32>::from_tree(t, Nu(pr))),
-                        "sigma" => Ok(MetaProblem::<u32>::from_tree(t, Sigma(pr))),
-                        "j" => Ok(MetaProblem::<u32>::from_tree(t, Jonsson(pr))),
+                        "wnu" => Ok(MetaProblem::<u32>::from_balanced(h, Wnu(pr))),
+                        "nu" => Ok(MetaProblem::<u32>::from_balanced(h, Nu(pr))),
+                        "sigma" => Ok(MetaProblem::<u32>::from_balanced(h, Sigma(pr))),
+                        "j" => Ok(MetaProblem::<u32>::from_balanced(h, Jonsson(pr))),
                         // TODO "hm" => Ok(MetaProblem::<u32>::from_tree(h, Hm(n))),
-                        "kk" => Ok(MetaProblem::<u32>::from_tree(t, KearnesKiss(pr))),
+                        "kk" => Ok(MetaProblem::<u32>::from_balanced(h, KearnesKiss(pr))),
                         // "noname" => Ok(MetaProblem::new(h, Noname(pr))),
                         &_ => Err(ParseConditionError),
                     }

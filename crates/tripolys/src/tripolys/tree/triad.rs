@@ -109,7 +109,7 @@ impl From<Triad> for AdjMap<u32> {
 impl Rooted for Triad {}
 
 impl Balanced for Triad {
-    fn level(&self, id: &u32) -> Option<u32> {
+    fn level(&self, id: &u32) -> Option<usize> {
         let mut count = *id as usize;
 
         for arm in self.iter() {

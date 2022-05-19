@@ -9,9 +9,9 @@ use crate::algebra::{Edges, Vertices};
 
 use super::AdjMatrix;
 
-pub trait VertexId: Eq + Clone + Hash + Debug + Send + Sync {}
+pub trait VertexId: Eq + Clone + Hash + Debug + Send + Sync + Ord {}
 
-impl<V> VertexId for V where V: Eq + Clone + Hash + Debug + Send + Sync {}
+impl<V> VertexId for V where V: Eq + Clone + Hash + Debug + Send + Sync + Ord {}
 
 /// Graph<V> is a directed graph datastructure using an adjacency list
 /// representation.
@@ -423,10 +423,10 @@ impl<T: VertexId> AdjMap<T> {
     /// graph.add_edge(&2, &5);
     /// graph.add_edge(&2, &3);
     ///
-    /// assert_eq!(graph.out_neighbors_count(&1), 2);
-    /// assert_eq!(graph.out_neighbors_count(&2), 2);
+    /// assert_eq!(graph.out_degree(&1), 2);
+    /// assert_eq!(graph.out_degree(&2), 2);
     /// ```
-    pub fn out_neighbors_count(&self, v: &T) -> usize {
+    pub fn out_degree(&self, v: &T) -> usize {
         let (o, _) = self.lists.get(v).unwrap();
         o.len()
     }
@@ -480,9 +480,9 @@ impl<T: VertexId> AdjMap<T> {
     /// graph.add_edge(&3, &1);
     /// graph.add_edge(&1, &4);
     ///
-    /// assert_eq!(graph.in_neighbors_count(&1), 1);
+    /// assert_eq!(graph.in_degree(&1), 1);
     /// ```
-    pub fn in_neighbors_count(&self, v: &T) -> usize {
+    pub fn in_degree(&self, v: &T) -> usize {
         let (_, i) = self.lists.get(v).unwrap();
         i.len()
     }
@@ -687,7 +687,9 @@ impl<T: VertexId> AdjMap<T> {
     /// assert!(matrix.has_edge(matrix.index_of(&5).unwrap() , matrix.index_of(&3).unwrap()));
     /// ```
     pub fn to_matrix(&self) -> AdjMatrix<T> {
-        let mut mat = AdjMatrix::from_vertices(self.vertices().cloned().collect_vec());
+        let mut vs = self.vertices().cloned().collect_vec();
+        vs.sort();
+        let mut mat = AdjMatrix::from_vertices(vs);
 
         for (u, v) in self.edges() {
             mat.add_edge(mat.index_of(&u).unwrap(), mat.index_of(&v).unwrap());
@@ -773,22 +775,32 @@ impl<T: VertexId> ToGraph for AdjMap<T> {
     }
 }
 
-impl AdjMap<u32> {
-    fn complete_graph(n: u32) -> AdjMap<u32> {
-        AdjMap::from_edges((0..n).flat_map(|i| [(i, (i + 1) % n), ((i + 1) % n, i)]))
-    }
+pub fn complete_graph<G>(n: u32) -> G
+where
+    G: FromIterator<(u32, u32)>,
+{
+    G::from_iter((0..n).flat_map(|i| [(i, (i + 1) % n), ((i + 1) % n, i)]))
+}
 
-    fn directed_cycle(n: u32) -> AdjMap<u32> {
-        AdjMap::from_edges((0..n).map(|i| (i, (i + 1) % n)))
-    }
+pub fn directed_cycle<G>(n: u32) -> G
+where
+    G: FromIterator<(u32, u32)>,
+{
+    G::from_iter((0..n).map(|i| (i, (i + 1) % n)))
+}
 
-    fn directed_path(n: u32) -> AdjMap<u32> {
-        AdjMap::from_edges((0..n).tuple_windows())
-    }
+pub fn directed_path<G>(n: u32) -> G
+where
+    G: FromIterator<(u32, u32)>,
+{
+    G::from_iter((0..n).tuple_windows())
+}
 
-    fn transitive_tournament(n: u32) -> AdjMap<u32> {
-        AdjMap::from_edges((0..n).tuple_combinations())
-    }
+pub fn transitive_tournament<G>(n: u32) -> G
+where
+    G: FromIterator<(u32, u32)>,
+{
+    G::from_iter((0..n).tuple_combinations())
 }
 
 impl std::str::FromStr for AdjMap<u32> {
@@ -798,10 +810,10 @@ impl std::str::FromStr for AdjMap<u32> {
         if let Some(g) = s.chars().next() {
             if let Ok(n) = &s[1..].parse::<u32>() {
                 match g {
-                    'k' => return Ok(AdjMap::complete_graph(*n)),
-                    'c' => return Ok(AdjMap::directed_cycle(*n)),
-                    'p' => return Ok(AdjMap::directed_path(*n)),
-                    't' => return Ok(AdjMap::transitive_tournament(*n)),
+                    'k' => return Ok(complete_graph(*n)),
+                    'c' => return Ok(directed_cycle(*n)),
+                    'p' => return Ok(directed_path(*n)),
+                    't' => return Ok(transitive_tournament(*n)),
                     _ => return Err(NotRegistered),
                 }
             }

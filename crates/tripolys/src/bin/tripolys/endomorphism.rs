@@ -3,7 +3,7 @@ use std::time::Instant;
 
 use clap::{App, Arg, ArgGroup, ArgMatches, SubCommand};
 use colored::*;
-use tripolys::tree::{is_core, Node, Triad};
+use tripolys::tree::{is_core_tree, Node, Triad};
 
 use crate::CmdResult;
 
@@ -50,7 +50,7 @@ pub fn command(args: &ArgMatches) -> CmdResult {
         if args.is_present("core") {
             println!("\n> Checking tree...");
             let start = Instant::now();
-            let result = is_core(&tree);
+            let result = is_core_tree(&tree);
             let time = start.elapsed();
 
             if result {

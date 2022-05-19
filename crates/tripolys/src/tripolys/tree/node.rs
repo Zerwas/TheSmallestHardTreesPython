@@ -144,7 +144,7 @@ impl From<Node> for AdjMap<u32> {
 impl Rooted for Node {}
 
 impl Balanced for Node {
-    fn level(&self, id: &u32) -> Option<u32> {
+    fn level(&self, id: &u32) -> Option<usize> {
         let mut rank = 0;
         let mut count = *id as usize;
         let mut node = self;

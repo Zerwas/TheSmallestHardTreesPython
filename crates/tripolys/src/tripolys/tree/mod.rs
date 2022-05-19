@@ -21,7 +21,7 @@ pub trait Rooted {
     }
 }
 
-pub fn is_core<T: Tree>(t: &T) -> bool {
+pub fn is_core_tree<T: Tree>(t: &T) -> bool {
     let problem = ColouringProblem::new(&t.to_graph(), &t.to_graph());
     let mut domains = DomMap::new(&problem);
     let _ = ac_3(&mut domains, &problem);
@@ -42,10 +42,10 @@ pub fn is_core<T: Tree>(t: &T) -> bool {
 pub trait Balanced {
     /// Returns None, if the tree has no vertex with id `id`. Otherwise, the
     /// rank of the respective vertex is returned.
-    fn level(&self, id: &u32) -> Option<u32>;
+    fn level(&self, id: &u32) -> Option<usize>;
 }
 
-pub fn is_rooted_core<R: Rooted + Tree>(rooted_tree: &R) -> bool {
+pub fn is_rooted_core_tree<R: Rooted + Tree>(rooted_tree: &R) -> bool {
     let graph = rooted_tree.to_graph();
     let colouring = move |v: &u32| {
         if *v == rooted_tree.root() {
