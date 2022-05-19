@@ -50,8 +50,14 @@ pub fn cli() -> App<'static, 'static> {
                 .long("condition")
                 .takes_value(true)
                 .value_name("NAME")
-                .help("The name of a condition the polymorphism must satisfy")
+                .help("The name of the condition the polymorphism must satisfy")
                 .required_unless("list"),
+        )
+        .arg(
+            Arg::with_name("balanced")
+                .short("b")
+                .long("balanced")
+                .help("Optimize based on the promise that H is balanced"),
         )
         .arg(
             Arg::with_name("graph")
@@ -59,7 +65,7 @@ pub fn cli() -> App<'static, 'static> {
                 .long("graph")
                 .takes_value(true)
                 .value_name("H")
-                .help("The graph for which to check for polymorphisms"),
+                .help("Check for polymorphisms of single graph H"),
         )
         .arg(
             Arg::with_name("input")
@@ -81,11 +87,11 @@ pub fn cli() -> App<'static, 'static> {
         )
         .arg(
             Arg::with_name("filter")
-                .short("s")
+                .short("f")
                 .long("filter")
                 .requires("input")
                 .takes_value(true)
-                .value_name("COND")
+                .value_name("PREDICATE")
                 .possible_values(&["deny", "admit"])
                 .help("Only write graphs to results if they deny/admit a polymorphism"),
         )
