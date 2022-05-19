@@ -17,7 +17,7 @@ where
     H: HasEdge<VH>,
     F: FnMut(&VG) -> VH,
 {
-    for (u, v) in g.edges() {
+    for (u, v) in g.edge_iter() {
         if !h.has_edge(&f(&u), &f(&v)) {
             return false;
         }
@@ -39,7 +39,7 @@ where
     H: Edges<VH> + HasEdge<VH> + Clone,
     F: FnMut(&Vec<VH>) -> VH,
 {
-    is_homomorphism(f, h.edges().power(k), h)
+    is_homomorphism(f, h.edge_iter().power(k), h)
 }
 
 pub trait HasEdge<V> {
@@ -49,7 +49,7 @@ pub trait HasEdge<V> {
 pub trait Vertices<V> {
     type VerticesIter: Iterator<Item = V>;
 
-    fn vertices(&self) -> Self::VerticesIter;
+    fn vertex_iter(&self) -> Self::VerticesIter;
 }
 
 impl<V: Clone, I> IterAlgebra<V> for I where I: Iterator<Item = (V, V)> {}
@@ -100,7 +100,7 @@ impl<V> Iterator for Power<V> {
 impl<V: Clone> Edges<Vec<V>> for Power<V> {
     type EdgesIter = Self;
 
-    fn edges(&self) -> Self::EdgesIter {
+    fn edge_iter(&self) -> Self::EdgesIter {
         self.clone()
     }
 }
@@ -108,7 +108,7 @@ impl<V: Clone> Edges<Vec<V>> for Power<V> {
 pub trait Edges<V> {
     type EdgesIter: Iterator<Item = (V, V)> + Clone;
 
-    fn edges(&self) -> Self::EdgesIter;
+    fn edge_iter(&self) -> Self::EdgesIter;
 }
 
 // pub trait IntoEdges<V> {

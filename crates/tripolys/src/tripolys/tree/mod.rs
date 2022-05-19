@@ -12,7 +12,7 @@ use arx::domains::DomMap;
 use crate::colouring::ColouringProblem;
 use crate::digraph::ToGraph;
 
-pub trait Tree: ToGraph<V = u32> {}
+pub trait Tree: ToGraph<V = u32> + Balanced {}
 
 /// A rooted tree is a tree in which one vertex has been designated the root.
 pub trait Rooted {

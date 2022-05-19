@@ -3,6 +3,7 @@ use itertools::Itertools;
 
 use crate::colouring::ColouringProblem;
 use crate::digraph::AdjMap;
+use crate::tree::{Tree, Balanced};
 
 use super::conditions::{Linear, Tuple, Vertex};
 use super::{Edges, IterAlgebra, Vertices};
@@ -22,10 +23,38 @@ impl<V: Vertex> MetaProblem<V> {
             .arities()
             .into_iter()
             .enumerate()
-            .flat_map(|(i, k)| h.edges().power(k).map(move |(u, v)| ((i, u), (i, v))))
+            .flat_map(|(i, k)| h.edge_iter().power(k).map(move |(u, v)| ((i, u), (i, v))))
             .collect::<AdjMap<_>>();
 
-        for set in condition.partition(h.vertices().collect::<Vec<_>>()) {
+        for set in condition.partition(h.vertex_iter().collect::<Vec<_>>()) {
+            // println!("set: {:?}", set);
+            for i in 1..set.len() {
+                indicator.contract_vertices(&set[0], &set[i]);
+            }
+        }
+
+        let mut problem = ColouringProblem::new(&indicator, &AdjMap::from_iter(h.edge_iter()));
+        problem.precolour(|v| condition.precolor(v));
+
+        MetaProblem { problem }
+    }
+
+    pub fn from_tree<T, C>(t: &T, condition: C) -> MetaProblem<u32>
+    where
+        T: Tree + Balanced,
+        C: Linear,
+    {
+        let h = t.to_graph();
+
+        let mut indicator = condition
+            .arities()
+            .into_iter()
+            .enumerate()
+            .flat_map(|(i, k)| h.edge_iter().power(k).map(move |(u, v)| ((i, u), (i, v))))
+            .filter(|((_, u), _)| u.iter().map(|v| t.level(v).unwrap()).all_equal())
+            .collect::<AdjMap<_>>();
+
+        for set in condition.partition(h.vertex_iter().collect::<Vec<_>>()) {
             // println!("set: {:?}", set);
             for i in 1..set.len() {
                 indicator.contract_vertices(&set[0], &set[i]);

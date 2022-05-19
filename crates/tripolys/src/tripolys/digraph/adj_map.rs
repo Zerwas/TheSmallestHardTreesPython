@@ -711,7 +711,7 @@ impl<'a, T> Iterator for VertexIter<'a, T> {
 impl<V: VertexId> Vertices<V> for AdjMap<V> {
     type VerticesIter = std::vec::IntoIter<V>;
 
-    fn vertices(&self) -> Self::VerticesIter {
+    fn vertex_iter(&self) -> Self::VerticesIter {
         self.vertices().cloned().collect_vec().into_iter()
     }
 }
@@ -720,7 +720,7 @@ impl<V: VertexId> Vertices<V> for AdjMap<V> {
 impl<V: VertexId> Edges<V> for AdjMap<V> {
     type EdgesIter = std::vec::IntoIter<(V, V)>;
 
-    fn edges(&self) -> Self::EdgesIter {
+    fn edge_iter(&self) -> Self::EdgesIter {
         self.edges().collect_vec().into_iter()
     }
 }
