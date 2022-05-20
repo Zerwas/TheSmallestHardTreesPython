@@ -25,14 +25,6 @@ pub fn cli() -> App<'static, 'static> {
                 .takes_value(true)
                 .required(true),
         )
-        // TODO .arg(
-        //     Arg::with_name("output")
-        //         .short("o")
-        //         .long("output")
-        //         .value_name("FILE")
-        //         .takes_value(true)
-        //         .help("Writes the found homomorphism to file FILE"),
-        // )
 }
 
 pub fn command(args: &ArgMatches) -> CmdResult {

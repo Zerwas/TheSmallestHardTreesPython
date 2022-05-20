@@ -1,15 +1,9 @@
-use arx::solver::BTStats;
-use clap::{App, Arg, ArgMatches};
-use csv::WriterBuilder;
+use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 use itertools::Itertools;
-use serde::ser::SerializeStruct;
-use serde::{Serialize, Serializer};
 
-use std::fmt::Display;
 use std::io::{BufWriter, Write};
 use std::path::{Path, PathBuf};
 use std::str::FromStr;
-use std::time::Duration;
 use std::time::Instant;
 
 use tripolys::digraph::ToGraph;
@@ -19,23 +13,20 @@ use tripolys::tree::Node;
 use crate::CmdResult;
 
 pub fn cli() -> App<'static, 'static> {
-    App::new("generate")
-        .version("1.0")
-        .author("Michael W. <michael.wernthaler@posteo.de>")
+    SubCommand::with_name("generate")
+        .setting(AppSettings::DeriveDisplayOrder)
         .about("Generate trees with a given number of vertices")
         .arg(
             Arg::with_name("core")
+                .short("core")
                 .long("core")
                 .help("Whether the generated graphs should be cores"),
         )
         .arg(
-            Arg::with_name("max_arity")
-                .short("m")
-                .long("max_arity")
-                .takes_value(true)
-                .value_name("NUM")
-                .conflicts_with("triads")
-                .help("The maximal arity of the trees"),
+            Arg::with_name("triads")
+                .short("t")
+                .long("triads")
+                .help("Generate triads"),
         )
         .arg(
             Arg::with_name("start")
@@ -54,11 +45,6 @@ pub fn cli() -> App<'static, 'static> {
                 .help("Number of nodes to end at (inclusive)"),
         )
         .arg(
-            Arg::with_name("triads")
-                .long("triads")
-                .help("Generate triads"),
-        )
-        .arg(
             Arg::with_name("data_path")
                 .short("d")
                 .long("data_path")
@@ -68,12 +54,13 @@ pub fn cli() -> App<'static, 'static> {
                 .help("Path of the data directory"),
         )
         .arg(
-            Arg::with_name("output")
-                .short("o")
-                .long("output")
-                .value_name("FILE")
+            Arg::with_name("max_arity")
+                .short("m")
+                .long("max_arity")
                 .takes_value(true)
-                .help("Name of the output file"),
+                .value_name("NUM")
+                .conflicts_with("triads")
+                .help("The maximal arity of the trees"),
         )
 }
 
@@ -109,7 +96,10 @@ pub fn command(args: &ArgMatches) -> CmdResult {
         } else {
             order.to_string()
         };
-        let path = PathBuf::from(data_path).join(order_dir);
+        let mut path = PathBuf::from(data_path).join(order_dir);
+        if triads {
+            path.push("triads");
+        }
         std::fs::create_dir_all(&path)?;
         let file_name = if core { "cores.edges" } else { "trees.edges" };
         let mut writer = BufWriter::new(std::fs::File::create(path.join(file_name))?);

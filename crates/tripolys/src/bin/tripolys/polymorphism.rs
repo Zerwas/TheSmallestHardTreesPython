@@ -6,20 +6,18 @@ use rayon::prelude::*;
 use serde::ser::SerializeStruct;
 use serde::{Serialize, Serializer};
 use time::Duration;
-use tripolys::tree::{Node, Tree, Triad};
 
 use std::fmt::Display;
 use std::path::Path;
-use std::str::FromStr;
 
 use tripolys::algebra::conditions::*;
 use tripolys::algebra::MetaProblem;
-use tripolys::digraph::{from_edge_list, AdjMap, ToGraph};
+use tripolys::digraph::{from_edge_list, AdjMap};
 
 use crate::{parse_graph, CmdResult};
 
-const AVAILABLE_CONDITIONS: [&str; 8] = [
-    "majority", "siggers", "kkm", "k-wnu", "k-nu", "k-sigma", "n-j", "n-hm",
+const AVAILABLE_CONDITIONS: [&str; 9] = [
+    "majority", "siggers", "kkm", "k-wnu", "k-nu", "n-j", "n-hm", "n-kk", "n-hmck",
 ];
 
 pub fn cli() -> App<'static, 'static> {
@@ -223,11 +221,12 @@ fn create_meta_problem(h: &AdjMap<u32>, s: &str) -> Result<MetaProblem<u32>, Par
                     match su {
                         "wnu" => Ok(MetaProblem::new(h, Wnu(pr))),
                         "nu" => Ok(MetaProblem::new(h, Nu(pr))),
-                        "sigma" => Ok(MetaProblem::new(h, Sigma(pr))),
+                        // "sigma" => Ok(MetaProblem::new(h, Sigma(pr))),
                         "j" => Ok(MetaProblem::new(h, Jonsson(pr))),
-                        // TODO "hm" => Ok(MetaProblem::new(h, Hm(n))),
+                        "hm" => Ok(MetaProblem::new(h, HagemanMitschke(pr))),
                         "kk" => Ok(MetaProblem::new(h, KearnesKiss(pr))),
-                        // "noname" => Ok(MetaProblem::new(h, Noname(pr))),
+                        "hmck" => Ok(MetaProblem::new(h, HobbyMcKenzie(pr))),
+                        "nn" => Ok(MetaProblem::new(h, Noname(pr))),
                         &_ => Err(ParseConditionError),
                     }
                 } else {
@@ -254,11 +253,12 @@ fn create_meta_problem_tree(
                     match su {
                         "wnu" => Ok(MetaProblem::<u32>::from_balanced(h, Wnu(pr))),
                         "nu" => Ok(MetaProblem::<u32>::from_balanced(h, Nu(pr))),
-                        "sigma" => Ok(MetaProblem::<u32>::from_balanced(h, Sigma(pr))),
+                        // "sigma" => Ok(MetaProblem::<u32>::from_balanced(h, Sigma(pr))),
                         "j" => Ok(MetaProblem::<u32>::from_balanced(h, Jonsson(pr))),
-                        // TODO "hm" => Ok(MetaProblem::<u32>::from_tree(h, Hm(n))),
+                        "hm" => Ok(MetaProblem::<u32>::from_balanced(h, HagemanMitschke(pr))),
                         "kk" => Ok(MetaProblem::<u32>::from_balanced(h, KearnesKiss(pr))),
-                        // "noname" => Ok(MetaProblem::new(h, Noname(pr))),
+                        "hmck" => Ok(MetaProblem::<u32>::from_balanced(h, HobbyMcKenzie(pr))),
+                        "nn" => Ok(MetaProblem::new(h, Noname(pr))),
                         &_ => Err(ParseConditionError),
                     }
                 } else {

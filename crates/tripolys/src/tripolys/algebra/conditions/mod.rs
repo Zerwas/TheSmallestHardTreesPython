@@ -2,6 +2,7 @@
 
 // mod custom;
 mod hageman_mitschke;
+mod hobby_mckenzie;
 mod jonsson;
 mod kiss_kearnes;
 mod kmm;
@@ -11,6 +12,8 @@ mod noname;
 mod siggers;
 mod sigma;
 
+pub use hageman_mitschke::HagemanMitschke;
+pub use hobby_mckenzie::HobbyMcKenzie;
 pub use jonsson::Jonsson;
 pub use kiss_kearnes::KearnesKiss;
 pub use kmm::Kmm;
