@@ -11,7 +11,7 @@ pub struct Config {
     /// Constrain to cores
     pub core: bool,
     /// Only enumerate triads
-    pub triads: bool,
+    pub triad: bool,
 }
 
 impl Default for Config {
@@ -19,7 +19,7 @@ impl Default for Config {
         Config {
             max_arity: 2,
             core: true,
-            triads: false,
+            triad: false,
         }
     }
 }
@@ -131,7 +131,7 @@ impl Generator {
     pub fn resume(&mut self, order: usize) -> Result<Vec<Node>, TreenumError> {
         assert!(order > 0, "Number of nodes must be greater than 0");
 
-        if self.config.triads && order < 4 {
+        if self.config.triad && order < 4 {
             return Err(TreenumError::TriadNumNodes(order));
         }
         if order < 1 {
@@ -144,7 +144,7 @@ impl Generator {
 
         self.forward(order);
 
-        let items = if self.config.triads {
+        let items = if self.config.triad {
             self.unique_triads(order)
         } else {
             self.unique_trees(order)

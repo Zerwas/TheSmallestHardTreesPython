@@ -23,9 +23,9 @@ pub fn cli() -> App<'static, 'static> {
                 .help("Whether the generated graphs should be cores"),
         )
         .arg(
-            Arg::with_name("triads")
+            Arg::with_name("triad")
                 .short("t")
-                .long("triads")
+                .long("triad")
                 .help("Generate triads"),
         )
         .arg(
@@ -69,7 +69,7 @@ pub fn command(args: &ArgMatches) -> CmdResult {
 
     let start = args.value_of("start").unwrap().parse::<usize>()?;
     let end = args.value_of("end").unwrap().parse::<usize>()?;
-    let triads = args.is_present("triads");
+    let triad = args.is_present("triad");
     let core = args.is_present("core");
     let max_arity = if let Some(a) = args.value_of("max_arity") {
         a.parse::<usize>()?
@@ -80,7 +80,7 @@ pub fn command(args: &ArgMatches) -> CmdResult {
     let config = Config {
         max_arity,
         core,
-        triads,
+        triad,
     };
 
     let mut generator = Generator::with_config(config);
@@ -97,7 +97,7 @@ pub fn command(args: &ArgMatches) -> CmdResult {
             order.to_string()
         };
         let mut path = PathBuf::from(data_path).join(order_dir);
-        if triads {
+        if triad {
             path.push("triads");
         }
         std::fs::create_dir_all(&path)?;
