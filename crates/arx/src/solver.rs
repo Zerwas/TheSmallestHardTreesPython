@@ -84,11 +84,11 @@ pub struct BTStats {
 
 impl BTStats {
     pub fn print(&self) {
-        println!("{: <12} {: <10}", "#ccks:", self.ccks);
-        println!("{: <12} {: <10}", "#backtracks:", self.backtracks);
-        println!("{: <12} {: <10}", "#solutions:", self.solutions);
-        println!("{: <12} {: <10?}s", "ac3_time", self.ac3_time.as_seconds_f32());
-        println!("{: <12} {: <10?}s", "mac3_time:", self.mac3_time.as_seconds_f32());
+        println!("{: <12} {}", "#ccks:", self.ccks);
+        println!("{: <12} {}", "#backtracks:", self.backtracks);
+        println!("{: <12} {}", "#solutions:", self.solutions);
+        println!("{: <12} {:?}s", "ac3_time", self.ac3_time.as_seconds_f32());
+        println!("{: <12} {:?}s", "mac3_time:", self.mac3_time.as_seconds_f32());
     }
 }
 
