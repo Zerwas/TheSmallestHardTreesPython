@@ -66,20 +66,26 @@ In Section 4, we introduce algorithms to generate small trees and core trees. Th
 
 ### The smallest NP-hard trees (Section 7.1.1) 
 
-The trees can be found [here](file:data/20/no_siggers.csv ). (TODO put the data there)
+The trees can be found [here](file:data/20/no_kmm.csv ). (TODO put the data there)
 To reproduce the result, run the following sequence of commands:
 
 ```
-./tripolys polymorphism --input cores.edges --output no_2wnu.csv --condition 2wnu --filter deny
-./tripolys polymorphism --input no_2wnu.csv --output no_3wnu.csv --condition 3wnu --filter deny
-./tripolys polymorphism --input no_3wnu.csv --output no_kmm.csv --condition kmm --filter deny
+cd data/20
+tripolys polymorphism -i cores.edges -o no_2wnu.csv -c 2-wnu -f deny
+tripolys polymorphism -i no_2wnu.csv -o no_3wnu.csv -c 3-wnu -f deny
+tripolys polymorphism -i no_3wnu.csv -o no_kmm.csv -c kmm -f deny
 ```
 
 We also found the smallest NP-hard triads: (TODO link edge lists here? TODO how to generate small triads?)
+The triads can be found [here](file:data/20/triads/no_kmm.csv ).
 
 ```
-./tripolys polymorphism --graph 10110000,0101111,100111 --condition kmm
-./tripolys polymorphism --graph 10110000,1001111,010111 --condition kmm
+tripolys generate -s 4 -e 22 --core --triad
+```
+
+```
+tripolys polymorphism --graph 10110000,0101111,100111 -c kmm
+tripolys polymorphism --graph 10110000,1001111,010111 -c kmm
 ```
 
 
