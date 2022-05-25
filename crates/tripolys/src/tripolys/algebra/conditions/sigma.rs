@@ -1,20 +1,25 @@
-use super::{HeightOne, Linear, Precolor, Set, Tuple};
+// use crate::digraph::traits::Vertices;
 
-/// σ(x,y) = σ(y,x)
-#[derive(Clone, Copy, Debug)]
-pub struct Sigma(pub usize);
+// use super::{HeightOne, Linear, Partition, Precolor};
 
-impl Precolor for Sigma {}
+// /// σ(x,y) = σ(y,x)
+// #[derive(Clone, Copy, Debug)]
+// pub struct Sigma(pub usize);
 
-impl Linear for Sigma {
-    fn arities(&self) -> Vec<super::Arity> {
-        todo!()
-    }
+// impl Precolor for Sigma {}
 
-    fn partition<V>(&self, vertices: Set<V>) -> Vec<Vec<(usize, Tuple<V>)>> {
-        todo!()
-    }
-}
+// impl Linear for Sigma {
+//     fn arities(&self) -> Vec<super::Arity> {
+//         todo!()
+//     }
+
+//     fn partition<G>(&self, vertices: &G) -> Partition<(usize, Vec<G::Vertex>)>
+//     where
+//         for<'a> G: Vertices<'a>,
+//     {
+//         todo!()
+//     }
+// }
 
 // /// σ(x,y) = σ(y,x)
 // #[derive(Clone, Copy, Debug)]
@@ -62,10 +67,10 @@ impl Linear for Sigma {
 //     }
 // }
 
-impl HeightOne for Sigma {
-    fn eq_under<T: PartialEq>(v: &[T], w: &[T]) -> bool {
-        todo!()
-        // debug_assert!(v.len() == 3 && w.len() == 3, "length must be equal to 2!");
-        // v[0] == w[1] && v[1] == w[2] && v[2] == w[0] || w[0] == v[1] && w[1] == v[2] && w[2] == v[0]
-    }
-}
+// impl HeightOne for Sigma {
+//     fn eq_under<T: PartialEq>(v: &[T], w: &[T]) -> bool {
+//         todo!()
+//         // debug_assert!(v.len() == 3 && w.len() == 3, "length must be equal to 2!");
+//         // v[0] == w[1] && v[1] == w[2] && v[2] == w[0] || w[0] == v[1] && w[1] == v[2] && w[2] == v[0]
+//     }
+// }

@@ -1,11 +1,11 @@
 use clap::{App, Arg, ArgMatches, SubCommand};
-use tripolys::digraph::to_dot;
+use tripolys::digraph::{formats::to_dot, AdjMatrix};
 
 use crate::{parse_graph, CmdResult};
 
 pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("dot")
-        .about("Convert the input graph to dot format")
+        .about("Convert a graph to dot format")
         .arg(
             Arg::with_name("graph")
                 .short("G")
@@ -25,9 +25,9 @@ pub fn cli() -> App<'static, 'static> {
 }
 
 pub fn command(args: &ArgMatches) -> CmdResult {
-    let tree = parse_graph(args.value_of("graph").unwrap())?;
+    let graph: AdjMatrix = parse_graph(args.value_of("graph").unwrap())?;
     let mut f = std::fs::File::create(args.value_of("out").unwrap())?;
-    to_dot(&tree.into(), &mut f)?;
+    to_dot(&graph, &mut f)?;
 
     Ok(())
 }

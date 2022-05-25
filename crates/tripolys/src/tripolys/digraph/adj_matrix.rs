@@ -1,267 +1,165 @@
-use std::collections::{HashMap, HashSet};
-use std::hash::Hash;
+use std::fmt;
+use std::iter::Iterator;
+use std::{iter::Cloned, slice::Iter};
 
 use bit_vec::BitVec;
+use num_iter::{range, Range};
+use num_traits::{PrimInt, Unsigned};
 
-#[derive(Debug, Clone)]
-struct Vertex<T> {
-    value: T,
-    out_edges: BitVec,
-}
-
-impl<T> Vertex<T> {
-    fn new(value: T, vertex_count: usize) -> Vertex<T> {
-        Vertex {
-            value,
-            out_edges: BitVec::from_elem(vertex_count, false),
-        }
-    }
-}
+use super::classes::Buildable;
+use super::traits::{Digraph, Edges, GraphType, Vertices};
 
 #[derive(Clone, Debug)]
-pub struct AdjMatrix<T> {
-    vertices: Vec<Vertex<T>>,
-    indices: HashMap<T, usize>,
-    edges: HashSet<(usize, usize)>,
+pub struct AdjMatrix<V = usize> {
+    num_vertices: usize,
+    adj: BitVec,
+    edges: Vec<(V, V)>,
 }
 
-impl<T: Hash + Eq + Clone> AdjMatrix<T> {
-    pub fn new() -> AdjMatrix<T> {
-        AdjMatrix {
-            vertices: Vec::new(),
-            indices: HashMap::new(),
-            edges: HashSet::new(),
-        }
-    }
-
-    pub fn from_vertices(vs: Vec<T>) -> AdjMatrix<T> {
-        let vertex_count = vs.len();
-        let mut vertices = Vec::with_capacity(vertex_count);
-
-        for v in &vs {
-            vertices.push(Vertex {
-                value: v.clone(),
-                out_edges: BitVec::from_elem(vertex_count, false),
-            });
-        }
-        let indices = vs.into_iter().enumerate().map(|(u, v)| (v, u)).collect();
-
-        AdjMatrix {
-            vertices,
-            indices,
-            edges: HashSet::new(),
-        }
-    }
-
-    /// Create a new `AdjMatrix` from an iterable of edges.
-    pub fn from_edges<I>(edges: I) -> AdjMatrix<T>
+impl AdjMatrix {
+    pub fn build_from<'a, G>(g: &'a G) -> AdjMatrix<G::Vertex>
     where
-        I: IntoIterator<Item = (T, T)>,
+        G: Digraph<'a>,
+        G::Vertex: PrimInt + Unsigned,
     {
-        Self::from_iter(edges)
+        let mut m = AdjMatrix::with_capacities(g.vertex_count(), g.edge_count());
+        for _ in 0..g.vertex_count() {
+            m.add_vertex();
+        }
+        for (u, v) in g.edges() {
+            m.add_edge(u, v);
+        }
+        m
+    }
+}
+
+impl<V: PrimInt + Unsigned> Buildable for AdjMatrix<V> {
+    type Vertex = V;
+
+    fn with_capacities(nvertices: usize, nedges: usize) -> Self {
+        AdjMatrix {
+            num_vertices: 0,
+            adj: BitVec::with_capacity(nvertices * nvertices),
+            edges: Vec::with_capacity(nedges),
+        }
     }
 
-    /// Adds a new vertex to the graph.
-    ///
-    /// ## Example
-    /// ```rust
-    /// use tripolys::digraph::AdjMatrix;
-    ///
-    /// let mut graph = AdjMatrix::new();
-    ///
-    /// graph.add_vertex(1);
-    ///
-    /// assert_eq!(graph.vertex_count(), 1);
-    /// ```
-    pub fn add_vertex(&mut self, a: T) -> usize {
-        let id = self.vertices.len();
-        for v in &mut self.vertices {
-            v.out_edges.push(false);
-        }
-        self.vertices.push(Vertex::new(a.clone(), id + 1));
-        self.indices.insert(a, id);
+    fn add_vertex(&mut self) -> V {
+        let id = V::from(self.num_vertices).unwrap();
+        self.adj.extend(vec![false; 2 * self.num_vertices + 1]);
+        self.num_vertices += 1;
         id
     }
 
-    /// Attempts to place a new edge in the graph.
-    ///
-    /// ## Example
-    /// ```rust
-    /// use tripolys::digraph::AdjMatrix;
-    ///
-    /// let mut graph = AdjMatrix::new();
-    ///
-    /// let v1 = graph.add_vertex(1);
-    /// let v2 = graph.add_vertex(2);
-    ///
-    /// // Adding an edge is idempotent
-    /// graph.add_edge(v1, v2);
-    /// graph.add_edge(v1, v2);
-    ///
-    /// assert_eq!(graph.edges_count(), 1);
-    /// ```
-    pub fn add_edge(&mut self, u: usize, v: usize) {
-        self.vertices[u].out_edges.set(v, true);
-        self.edges.insert((u, v));
-    }
-}
-
-impl<T> AdjMatrix<T> {
-    /// ## Example
-    /// ```rust
-    /// use tripolys::digraph::AdjMatrix;
-    ///
-    /// let mut graph = AdjMatrix::new();
-    ///
-    /// let v1 = graph.add_vertex(1);
-    /// let v2 = graph.add_vertex(3);
-    ///
-    /// assert_eq!(graph.value(v1), &1);
-    /// assert_eq!(graph.value(v2), &3);
-    /// ```
-    pub fn value(&self, vertex_id: usize) -> &T {
-        &self.vertices[vertex_id].value
-    }
-
-    /// ## Example
-    /// ```rust
-    /// use tripolys::digraph::AdjMatrix;
-    ///
-    /// let mut graph = AdjMatrix::new();
-    ///
-    /// let v1 = graph.add_vertex(1);
-    /// let v2 = graph.add_vertex(3);
-    ///
-    /// assert_eq!(graph.values().len(), 2);
-    /// ```
-    pub fn values(&self) -> Vec<&T> {
-        self.vertices.iter().map(|v| &v.value).collect()
-    }
-
-    /// ## Example
-    /// ```rust
-    /// use tripolys::digraph::AdjMatrix;
-    ///
-    /// let mut graph = AdjMatrix::new();
-    ///
-    /// let v1 = graph.add_vertex(1);
-    /// let v2 = graph.add_vertex(3);
-    ///
-    /// assert_eq!(graph.vertices(), vec![0, 1]);
-    /// ```
-    pub fn vertices(&self) -> Vec<usize> {
-        (0..self.vertices.len()).collect()
-    }
-
-    /// ## Example
-    /// ```rust
-    /// use tripolys::digraph::AdjMatrix;
-    ///
-    /// let mut graph = AdjMatrix::new();
-    ///
-    /// let v1 = graph.add_vertex(1);
-    /// let v2 = graph.add_vertex(3);
-    ///
-    /// assert_eq!(graph.vertex_count(), 2);
-    /// ```
-    pub fn vertex_count(&self) -> usize {
-        self.vertices.len()
-    }
-}
-
-impl<T: Hash + Eq> AdjMatrix<T> {
-    /// ## Example
-    /// ```rust
-    /// use tripolys::digraph::AdjMatrix;
-    ///
-    /// let mut graph = AdjMatrix::new();
-    ///
-    /// let v1 = graph.add_vertex(1);
-    /// let v2 = graph.add_vertex(3);
-    ///
-    /// assert_eq!(graph.index_of(&1), Some(v1));
-    /// assert_eq!(graph.index_of(&3), Some(v2));
-    /// assert_eq!(graph.index_of(&4), None);
-    /// ```
-    pub fn index_of(&self, v: &T) -> Option<usize> {
-        self.indices.get(v).copied()
-    }
-}
-
-impl<T> AdjMatrix<T> {
-    /// ## Example
-    /// ```rust
-    /// use tripolys::digraph::AdjMatrix;
-    ///
-    /// let mut graph = AdjMatrix::new();
-    ///
-    /// let v1 = graph.add_vertex(1);
-    /// let v2 = graph.add_vertex(3);
-    /// let v3 = graph.add_vertex(5);
-    ///
-    /// graph.add_edge(v1, v2);
-    /// graph.add_edge(v3, v2);
-    /// graph.add_edge(v2, v3);
-    ///
-    /// assert_eq!(graph.edges().count(), 3);
-    /// ```
-    pub fn edges(&self) -> impl Iterator<Item = (usize, usize)> + '_ {
-        self.edges.iter().copied()
-    }
-
-    /// ## Example
-    /// ```rust
-    /// use tripolys::digraph::AdjMatrix;
-    ///
-    /// let mut graph = AdjMatrix::new();
-    ///
-    /// let v1 = graph.add_vertex(1);
-    /// let v2 = graph.add_vertex(3);
-    /// let v3 = graph.add_vertex(5);
-    ///
-    /// graph.add_edge(v1, v2);
-    /// graph.add_edge(v3, v2);
-    /// graph.add_edge(v2, v3);
-    ///
-    /// assert_eq!(graph.edges_count(), 3);
-    /// ```
-    pub fn edges_count(&self) -> usize {
-        self.edges().count()
-    }
-
-    /// ## Example
-    /// ```rust
-    /// use tripolys::digraph::AdjMatrix;
-    ///
-    /// let mut graph = AdjMatrix::new();
-    ///
-    /// let v1 = graph.add_vertex(1);
-    /// let v2 = graph.add_vertex(3);
-    /// let v3 = graph.add_vertex(5);
-    ///
-    /// graph.add_edge(v1, v2);
-    /// graph.add_edge(v3, v2);
-    /// graph.add_edge(v2, v3);
-    ///
-    /// assert!(graph.has_edge(v1, v2));
-    /// assert!(graph.has_edge(v2, v3));
-    /// assert!(graph.has_edge(v3, v2));
-    /// ```
-    pub fn has_edge(&self, v: usize, w: usize) -> bool {
-        self.vertices[v].out_edges[w]
-    }
-}
-
-impl<V: Hash + Eq + Clone> FromIterator<(V, V)> for AdjMatrix<V> {
-    fn from_iter<T: IntoIterator<Item = (V, V)>>(iter: T) -> Self {
-        let mut result = AdjMatrix::new();
-
-        for (u, v) in iter {
-            let ui = result.index_of(&u).unwrap_or(result.add_vertex(u));
-            let vi = result.index_of(&v).unwrap_or(result.add_vertex(v));
-            result.add_edge(ui, vi);
+    fn add_edge(&mut self, u: V, v: V) {
+        let u_id = u.to_usize().unwrap();
+        let v_id = v.to_usize().unwrap();
+        if u_id >= self.num_vertices {
+            for _ in self.num_vertices..=u_id {
+                self.add_vertex();
+            }
         }
+        if v_id >= self.num_vertices {
+            for _ in self.num_vertices..=v_id {
+                self.add_vertex();
+            }
+        }
+        let edge_id = u_id * self.vertex_count() + v_id;
+        self.adj.set(edge_id, true);
+        self.edges.push((u, v));
+    }
 
-        result
+    fn shrink_to_fit(&mut self) {
+        self.adj.shrink_to_fit();
+        self.edges.shrink_to_fit();
+    }
+}
+
+impl<'a, V> GraphType for AdjMatrix<V>
+where
+    V: 'a + PrimInt + Unsigned,
+{
+    type Vertex = V;
+}
+
+#[derive(Clone)]
+pub struct VertexIt<V>(Range<V>);
+
+impl<V> Iterator for VertexIt<V>
+where
+    V: PrimInt + Unsigned,
+{
+    type Item = V;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next()
+    }
+}
+
+impl<'a, V> Vertices<'a> for AdjMatrix<V>
+where
+    V: 'a + PrimInt + Unsigned,
+{
+    type VertexIter = VertexIt<V>;
+
+    fn vertices(&self) -> Self::VertexIter {
+        VertexIt(range(V::zero(), V::from(self.vertex_count()).unwrap()))
+    }
+
+    fn vertex_count(&self) -> usize {
+        self.num_vertices
+    }
+
+    fn has_vertex(&self, v: Self::Vertex) -> bool {
+        v < V::from(self.num_vertices).unwrap()
+    }
+}
+
+#[derive(Clone)]
+pub struct EdgeIt<'a, V: Clone>(Cloned<Iter<'a, (V, V)>>);
+
+impl<V: Clone> Iterator for EdgeIt<'_, V> {
+    type Item = (V, V);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next()
+    }
+}
+
+impl<'a, V> Edges<'a> for AdjMatrix<V>
+where
+    V: 'a + PrimInt + Unsigned,
+{
+    type EdgeIter = EdgeIt<'a, V>;
+
+    fn edges(&'a self) -> Self::EdgeIter {
+        let t = self.edges.iter().cloned();
+        EdgeIt(t)
+    }
+
+    fn edge_count(&self) -> usize {
+        self.edges.len()
+    }
+
+    fn has_edge(&self, u: Self::Vertex, v: Self::Vertex) -> bool {
+        self.adj[u.to_usize().unwrap() * self.vertex_count() + v.to_usize().unwrap()]
+    }
+}
+
+impl Digraph<'_> for AdjMatrix {}
+
+impl<V> FromIterator<(V, V)> for AdjMatrix<V> {
+    fn from_iter<T: IntoIterator<Item = (V, V)>>(iter: T) -> AdjMatrix<V> {
+        todo!()
+    }
+}
+
+impl fmt::Display for AdjMatrix {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let mut s = String::from("[");
+        for (u, v) in self.edges() {
+            s.push_str(&format!("({},{})", u, v));
+        }
+        write!(f, "")
     }
 }

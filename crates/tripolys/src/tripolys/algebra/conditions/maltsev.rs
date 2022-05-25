@@ -1,10 +1,12 @@
-use super::{Arity, Linear, Operation, Partition, Precolor, Set, Tuple, Vertex};
+use crate::digraph::traits::Vertices;
+
+use super::{Arity, Operation, Partition, Precolor};
 
 pub struct Maltsev;
 
 impl Precolor for Maltsev {
-    fn precolor<V: super::Vertex>(&self, v: &(usize, super::Tuple<V>)) -> Option<V> {
-        None
+    fn precolor<V>(&self, _: &(usize, Vec<V>)) -> Option<V> {
+        todo!()
     }
 }
 
@@ -13,7 +15,10 @@ impl Operation for Maltsev {
         3
     }
 
-    fn partition<V: Vertex>(&self, vertices: Set<V>) -> Partition<Tuple<V>> {
+    fn partition<G>(&self, _: &G) -> Partition<Vec<G::Vertex>>
+    where
+        for<'a> G: Vertices<'a>,
+    {
         todo!()
     }
 }

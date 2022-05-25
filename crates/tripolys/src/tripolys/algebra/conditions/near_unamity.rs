@@ -3,14 +3,19 @@ use itertools::Itertools;
 use std::collections::HashMap;
 use std::hash::Hash;
 
-use super::{Arity, HeightOne, Operation, Partition, Precolor, Set, Tuple, Vertex};
+use crate::digraph::traits::Vertices;
+
+use super::{Arity, Operation, Partition, Precolor};
 
 impl Operation for Majority {
     fn arity(&self) -> Arity {
         3
     }
 
-    fn partition<V: Vertex>(&self, vertices: Set<V>) -> Partition<Tuple<V>> {
+    fn partition<G>(&self, vertices: &G) -> Partition<Vec<G::Vertex>>
+    where
+        for<'a> G: Vertices<'a>,
+    {
         Nu(3).partition(vertices)
     }
 }
@@ -20,8 +25,11 @@ impl Operation for Wnu {
         self.0
     }
 
-    fn partition<V: Vertex>(&self, vertices: Set<V>) -> Partition<Tuple<V>> {
-        nu_partition(self.arity(), &vertices, true)
+    fn partition<G>(&self, vertices: &G) -> Partition<Vec<G::Vertex>>
+    where
+        for<'a> G: Vertices<'a>,
+    {
+        nu_partition(self.arity(), vertices, true)
     }
 }
 
@@ -30,8 +38,11 @@ impl Operation for Nu {
         self.0
     }
 
-    fn partition<V: Vertex>(&self, vertices: Set<V>) -> Partition<Tuple<V>> {
-        nu_partition(self.arity(), &vertices, false)
+    fn partition<G>(&self, vertices: &G) -> Partition<Vec<G::Vertex>>
+    where
+        for<'a> G: Vertices<'a>,
+    {
+        nu_partition(self.arity(), vertices, false)
     }
 }
 
@@ -54,7 +65,7 @@ impl Precolor for Majority {
 pub struct Nu(pub usize);
 
 impl Precolor for Nu {
-    fn precolor<V: Vertex>(&self, (_, v): &(usize, Tuple<V>)) -> Option<V> {
+    fn precolor<V: Copy + Eq + Hash>(&self, (_, v): &(usize, Vec<V>)) -> Option<V> {
         if let ElemCount::Once(x1, _) = elem_count(v) {
             Some(x1)
         } else {
@@ -69,17 +80,16 @@ pub struct Wnu(pub usize);
 
 impl Precolor for Wnu {}
 
-fn nu_partition<V: Copy + PartialEq>(
-    arity: usize,
-    vertices: &[V],
-    weak: bool,
-) -> Vec<Vec<Tuple<V>>> {
+fn nu_partition<G>(arity: usize, g: &G, weak: bool) -> Partition<Vec<G::Vertex>>
+where
+    for<'a> G: Vertices<'a>,
+{
     let mut ret = Vec::new();
 
-    for &v in vertices {
+    for v in g.vertices() {
         let mut vec = Vec::new();
 
-        for &w in vertices {
+        for w in g.vertices() {
             if v == w {
                 continue;
             }
@@ -104,25 +114,25 @@ fn nu_partition<V: Copy + PartialEq>(
     ret
 }
 
-impl HeightOne for Nu {
-    fn eq_under<V: Vertex>(t1: &[V], t2: &[V]) -> bool {
-        assert!(t1.len() >= 2 && t2.len() >= 2, "length must be at least 2!");
-        match (elem_count(t1), elem_count(t2)) {
-            (ElemCount::Once(x1, _), ElemCount::Once(x2, _)) => x1 == x2,
-            _ => false,
-        }
-    }
-}
+// impl HeightOne for Nu {
+//     fn eq_under<V>(t1: &[V], t2: &[V]) -> bool {
+//         assert!(t1.len() >= 2 && t2.len() >= 2, "length must be at least 2!");
+//         match (elem_count(t1), elem_count(t2)) {
+//             (ElemCount::Once(x1, _), ElemCount::Once(x2, _)) => x1 == x2,
+//             _ => false,
+//         }
+//     }
+// }
 
-impl HeightOne for Wnu {
-    fn eq_under<V: Vertex>(t1: &[V], t2: &[V]) -> bool {
-        assert!(t1.len() >= 2 && t2.len() >= 2, "length must be at least 2!");
-        match (elem_count(t1), elem_count(t2)) {
-            (ElemCount::Once(x1, y1), ElemCount::Once(x2, y2)) => x1 == x2 && y1 == y2,
-            _ => false,
-        }
-    }
-}
+// impl HeightOne for Wnu {
+//     fn eq_under<V: Copy + Hash + Eq>(t1: &[V], t2: &[V]) -> bool {
+//         assert!(t1.len() >= 2 && t2.len() >= 2, "length must be at least 2!");
+//         match (elem_count(t1), elem_count(t2)) {
+//             (ElemCount::Once(x1, y1), ElemCount::Once(x2, y2)) => x1 == x2 && y1 == y2,
+//             _ => false,
+//         }
+//     }
+// }
 
 // Result of pre-processing for WNU/quasi-majority check
 enum ElemCount<T: Eq + Clone + Hash> {

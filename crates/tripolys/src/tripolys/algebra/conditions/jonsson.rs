@@ -1,6 +1,8 @@
 use itertools::Itertools;
 
-use super::{Arity, Linear, Partition, Precolor, Set, Tuple, Vertex};
+use crate::digraph::traits::Vertices;
+
+use super::{Arity, Linear, Partition, Precolor};
 
 pub struct Jonsson(pub usize);
 
@@ -11,15 +13,18 @@ impl Linear for Jonsson {
         vec![3; 2 * self.0 + 1]
     }
 
-    fn partition<V: Vertex>(&self, set: Set<V>) -> Partition<(usize, Tuple<V>)> {
+    fn partition<G>(&self, g: &G) -> Partition<(usize, Vec<G::Vertex>)>
+    where
+        for<'a> G: Vertices<'a>,
+    {
         let mut partition = Vec::new();
 
-        for &x in &set {
+        for x in g.vertices() {
             let mut id = (0..(2 * self.0 + 1))
                 .map(|i| (i, vec![x, x, x]))
                 .collect_vec();
 
-            for &y in &set {
+            for y in g.vertices() {
                 if x == y {
                     continue;
                 }

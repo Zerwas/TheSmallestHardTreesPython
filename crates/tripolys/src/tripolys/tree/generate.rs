@@ -1,42 +1,83 @@
 use std::sync::Arc;
-use std::time::{Duration, Instant};
 
-use crate::tree::{is_core_tree, is_rooted_core_tree, Node};
+use crate::tree::{is_core_tree, is_rooted_core_tree, TreeNode};
 use itertools::Itertools;
 use rayon::prelude::*;
 
+macro_rules! stat {
+    ($c:ident . $field:ident $($t:tt)*) => {
+        #[cfg(feature = "stats")]
+        {
+            if let Some(ref mut st) = $c.stats {
+                st . $field $($t)*;
+            }
+        }
+    }
+}
+
 pub struct Config {
+    /// Number of vertices to start at
+    pub start: usize,
+    /// Number of vertices to end at (inclusive)
+    pub end: usize,
     /// Maximal degree of each node
     pub max_arity: usize,
     /// Constrain to cores
     pub core: bool,
     /// Only enumerate triads
     pub triad: bool,
+    /// Record statistics
+    pub stats: Option<Stats>,
+}
+
+/// Statistics from tree generation
+#[derive(Clone, Copy, Default)]
+pub struct Stats {
+    /// Time for rooted core checks
+    pub rcc_time: f32,
+    /// Number of generated rooted trees
+    pub num_rcc: usize,
+    /// Time for core checks
+    pub cc_time: f32,
+    /// Number of generated trees
+    pub num_cc: usize,
 }
 
 impl Default for Config {
     fn default() -> Config {
         Config {
+            start: 1,
+            end: 10,
             max_arity: 2,
             core: true,
             triad: false,
+            stats: Some(Stats::default()),
         }
     }
 }
 
-pub struct Generator {
-    rooted_trees: Vec<Vec<Arc<Node>>>,
+pub struct TreeGenerator {
+    rooted_trees: Vec<Vec<Arc<TreeNode>>>,
     config: Config,
+    nvertices: usize,
 }
 
-impl Generator {
-    pub fn new() -> Generator {
-        Generator::with_config(Config::default())
+impl TreeGenerator {
+    pub fn new() -> TreeGenerator {
+        TreeGenerator::with_config(Config::default())
     }
 
-    pub fn with_config(config: Config) -> Generator {
-        Generator {
-            rooted_trees: vec![vec![Arc::new(Node::leaf())]],
+    pub fn with_config(config: Config) -> TreeGenerator {
+        if config.triad && config.start < 4 {
+            panic!("There is no triad with {} nodes", config.start);
+        }
+        if config.start == 0 {
+            panic!("There is no tree with {} nodes", config.start);
+        }
+
+        TreeGenerator {
+            rooted_trees: vec![vec![Arc::new(TreeNode::leaf())]],
+            nvertices: config.start,
             config,
         }
     }
@@ -44,7 +85,11 @@ impl Generator {
     /// Returns all unique sets of `n` rooted trees whose number of nodes sum
     /// up to `total`. The trees are sorted by their number of nodes in
     /// ascending order.
-    fn rooted_trees(&self, total: usize, n: usize) -> impl Iterator<Item = Vec<Arc<Node>>> + '_ {
+    fn rooted_trees(
+        &self,
+        total: usize,
+        n: usize,
+    ) -> impl Iterator<Item = Vec<Arc<TreeNode>>> + '_ {
         addends(total, n)
             .into_iter()
             .flat_map(|vec| {
@@ -55,11 +100,11 @@ impl Generator {
             .filter(|vec| vec.windows(2).all(|w| w[0] <= w[1])) // excludes permutations
     }
 
-    fn forward(&mut self, order: usize) {
-        for step in self.rooted_trees.len() + 1..order {
-            let mut trees = Vec::<Vec<Arc<Node>>>::new();
-            let mut rooted_core_time = Duration::from_secs(0);
-            let mut num = 0;
+    fn generate_rooted_trees(&mut self) {
+        for step in self.rooted_trees.len() + 1..self.nvertices {
+            let mut trees = Vec::<Vec<Arc<TreeNode>>>::new();
+            // let mut rcc_time = time::OffsetDateTime::now_utc();
+            let mut num_rcc = 0;
 
             for arity in 1..self.config.max_arity {
                 let treenagers = self
@@ -68,8 +113,8 @@ impl Generator {
                     .flat_map(|children| connect_by_vertex(&children))
                     .collect::<Vec<_>>();
 
-                num += treenagers.len();
-                let start = Instant::now();
+                num_rcc += treenagers.len();
+                // let start = time::OffsetDateTime::now_utc();
                 let filtered = treenagers
                     .into_par_iter()
                     .filter_map(|child| {
@@ -81,103 +126,78 @@ impl Generator {
                     })
                     .collect::<Vec<_>>();
 
-                rooted_core_time += start.elapsed();
+                // rc_time += start.elapsed(); TODO
                 trees.push(filtered);
             }
-            println!("    - rcc_time: {:?}, #rcc: {}", rooted_core_time, num);
-
             let trees = trees.into_iter().flatten().collect_vec();
-            if self.config.core {
-                println!(
-                    "    - Generated {} rooted core trees with {} nodes",
-                    trees.len(),
-                    step
-                );
+
+            if let Some(mut stats) = self.config.stats {
+                // stats.rcc_time = rcc_time; TODO
+                stats.num_rcc = num_rcc;
             }
             self.rooted_trees.push(trees);
         }
     }
 
-    fn unique_trees(&self, order: usize) -> Vec<Node> {
-        // A tree with centre is a rooted tree where at least two children of the root
-        // have height d−1
-        let centered = (2..=self.config.max_arity)
-            .flat_map(move |arity| {
-                self.rooted_trees(order - 1, arity)
-                    .flat_map(|children| connect_by_vertex(&children))
-            })
-            .filter(|tree| tree.is_centered());
+    fn generate_trees(&mut self) -> Vec<TreeNode> {
+        self.generate_rooted_trees();
 
-        // A bicentered tree is formed by taking two rooted trees of equal
-        // height and adding an edge between their roots
-        let bicentered = self
-            .rooted_trees(order, 2)
-            .filter(|c| c[0].height == c[1].height)
-            .flat_map(|v| connect_by_edge(&v[0], &v[1]));
-
-        centered.chain(bicentered).collect()
-    }
-
-    fn unique_triads(&self, order: usize) -> Vec<Node> {
-        self.rooted_trees(order - 1, 3)
-            .filter(|arms| {
-                arms.iter()
-                    .all(|root| root.max_arity < 3 && root.arity() < 2)
-            })
-            .flat_map(|arms| connect_by_vertex(&arms))
-            .collect()
-    }
-
-    pub fn resume(&mut self, order: usize) -> Result<Vec<Node>, TreenumError> {
-        assert!(order > 0, "Number of nodes must be greater than 0");
-
-        if self.config.triad && order < 4 {
-            return Err(TreenumError::TriadNumNodes(order));
-        }
-        if order < 1 {
-            return Err(TreenumError::TreeNumNodes(order));
-        }
-
-        if order == 1 {
-            return Ok(vec![Node::leaf()]);
-        }
-
-        self.forward(order);
-
-        let items = if self.config.triad {
-            self.unique_triads(order)
+        if self.config.triad {
+            self.rooted_trees(self.nvertices - 1, 3)
+                .filter(|arms| {
+                    arms.iter()
+                        .all(|arm| arm.is_path())
+                })
+                .flat_map(|arms| connect_by_vertex(&arms))
+                .filter(|tree| tree.is_triad())
+                .collect()
         } else {
-            self.unique_trees(order)
-        };
+            // A tree with centre is a rooted tree where at least two children of the root
+            // have height d−1
+            let centered = (2..=self.config.max_arity)
+                .flat_map(|arity| {
+                    self.rooted_trees(self.nvertices - 1, arity)
+                        .flat_map(|children| connect_by_vertex(&children))
+                })
+                .filter(|tree| tree.is_centered());
 
-        let num_items = items.len();
-        let mut cc_time = Duration::from_secs(0);
-        let mut filter = |t: &Node| {
-            let start = Instant::now();
+            // A bicentered tree is formed by taking two rooted trees of equal
+            // height and adding an edge between their roots
+            let bicentered = self
+                .rooted_trees(self.nvertices, 2)
+                .filter(|c| c[0].height == c[1].height)
+                .flat_map(|v| connect_by_edge(&v[0], &v[1]));
+
+            centered.chain(bicentered).collect()
+        }
+    }
+
+    pub fn next(&mut self) -> Vec<TreeNode> {
+        if self.nvertices == 1 {
+            return vec![TreeNode::leaf()];
+        }
+
+        let trees = self.generate_trees();
+
+        let num_cc = trees.len();
+        // let mut cc_time = Duration::from_secs(0);
+        let filter = |t: &TreeNode| {
+            // let start = Instant::now();
             let p = is_core_tree(t);
-            cc_time += start.elapsed();
+            // cc_time += start.elapsed();
             p
         };
-        let filtered = items
-            .into_iter()
+        let filtered = trees
+            .into_par_iter()
             .filter(|t| !self.config.core || filter(t))
             .collect::<Vec<_>>();
-        if self.config.core {
-            println!(
-                "    - cc_time: {:?}, #cc: {}",
-                cc_time / num_items as u32,
-                num_items
-            );
+        if let Some(mut stats) = self.config.stats {
+            // stats.cc_time = cc_time; TODO
+            stats.num_cc = num_cc;
         }
-        if self.config.core {
-            println!(
-                "    - Generated {} core trees with {} nodes",
-                filtered.len(),
-                order
-            );
-        }
+        self.nvertices += 1;
 
-        Ok(filtered)
+        filtered
     }
 }
 
@@ -185,7 +205,7 @@ impl Generator {
 /// `child` becomes the rightmost child of `tree`.
 ///
 /// If the two trees happen to be the same, we only add an edge once.
-fn connect_by_edge(tree: &Arc<Node>, child: &Arc<Node>) -> Vec<Node> {
+fn connect_by_edge(tree: &Arc<TreeNode>, child: &Arc<TreeNode>) -> Vec<TreeNode> {
     let connect = |dir| {
         tree.iter()
             .chain(std::iter::once((child.clone(), dir)))
@@ -201,7 +221,7 @@ fn connect_by_edge(tree: &Arc<Node>, child: &Arc<Node>) -> Vec<Node> {
 
 /// Connects an arbitrary number of rooted trees by adding a new vertex that is
 /// adjacent to each of their roots.
-fn connect_by_vertex(children: &[Arc<Node>]) -> Vec<Node> {
+fn connect_by_vertex(children: &[Arc<TreeNode>]) -> Vec<TreeNode> {
     (0..children.len())
         .map(|_| [true, false].into_iter())
         .multi_cartesian_product()
@@ -242,20 +262,20 @@ fn addends(sum: usize, n: usize) -> Vec<Vec<usize>> {
 }
 
 #[derive(Debug)]
-pub enum TreenumError {
+pub enum GenerateError {
     /// The number of nodes is too small
     TreeNumNodes(usize),
     /// The number of nodes is too small
     TriadNumNodes(usize),
 }
 
-impl std::fmt::Display for TreenumError {
+impl std::fmt::Display for GenerateError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
-            TreenumError::TreeNumNodes(n) => write!(f, "There is no tree with {} nodes", n),
-            TreenumError::TriadNumNodes(n) => write!(f, "There is no triad with {} nodes", n),
+            GenerateError::TreeNumNodes(n) => write!(f, "There is no tree with {} nodes", n),
+            GenerateError::TriadNumNodes(n) => write!(f, "There is no triad with {} nodes", n),
         }
     }
 }
 
-impl std::error::Error for TreenumError {}
+impl std::error::Error for GenerateError {}

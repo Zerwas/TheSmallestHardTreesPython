@@ -1,4 +1,6 @@
-use super::{Arity, Linear, Partition, Precolor, Set, Tuple};
+use crate::digraph::traits::Vertices;
+
+use super::{Arity, Linear, Partition, Precolor};
 
 /// p(x,y,y) = q(y,x,x) = q(x,x,y), p(x,y,x) = q(x,y,x)
 pub struct Kmm;
@@ -10,13 +12,14 @@ impl Linear for Kmm {
         vec![3, 3]
     }
 
-    // p(x, y, y) ≈ q(y, x, x) ≈ q(x, x, y)
-    // p(x, y, x) ≈ q(x, y, x).
-    fn partition<V: PartialEq + Copy>(&self, vertices: Set<V>) -> Partition<(usize, Tuple<V>)> {
+    fn partition<G>(&self, g: &G) -> Partition<(usize, Vec<G::Vertex>)>
+    where
+        for<'a> G: Vertices<'a>,
+    {
         let mut partition = Vec::new();
 
-        for &x in &vertices {
-            for &y in &vertices {
+        for x in g.vertices() {
+            for y in g.vertices() {
                 if x == y {
                     partition.push(vec![(0, vec![x, x, x]), (1, vec![x, x, x])]);
                 }

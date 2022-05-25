@@ -1,9 +1,13 @@
 Tripolys
 ====================================
 
-A program for checking homomorphisms and testing polymorphism conditions of directed graphs. Also implements an algorithm to generate orientations of trees, and core orientations of trees. 
+A program for checking homomorphisms and testing polymorphism conditions of
+directed graphs. Also implements an algorithm to generate orientations of trees,
+and core orientations of trees. 
 
-This repository contains companion code for the following paper. If you use this code, please cite the paper. You can use the bibtex reference below. (TODO update once published)
+This repository contains companion code for the following paper. If you use this
+code, please cite the paper. You can use the bibtex reference below. (TODO
+update once published)
 
 _M. Bodirsky, J. Bulín, F. Starke, and M. Wernthaler. The smallest hard trees, arXiv:2205.07528 [math.RA] (May 2022)_
 https://doi.org/10.48550/arXiv.2205.07528
@@ -23,7 +27,10 @@ https://doi.org/10.48550/arXiv.2205.07528
 
 Introduction
 -----------------
-In the paper *The Smallest Hard Trees*, we study computational and descriptive complexity of fixed-template CSPs for small orientations of trees. The paper contains a number of experimental results (see Section 7). Below you can find the commands to reproduce those results.
+In the paper *The Smallest Hard Trees*, we study computational and descriptive
+complexity of fixed-template CSPs for small orientations of trees. The paper
+contains a number of experimental results (see Section 7). Below you can find
+the commands to reproduce those results.
 
 Installation
 -----------------
@@ -51,7 +58,8 @@ Usage
 
 ### Generate small trees and core trees
 
-In Section 4, we introduce algorithms to generate small trees and core trees. The numbers of such trees are given in Table 2 in Section 7.
+In Section 4, we introduce algorithms to generate small trees and core trees.
+The numbers of such trees are given in Table 2 in Section 7.
 
 - Generate all trees with number of vertices between `n` and `m`:
 ```
@@ -76,7 +84,7 @@ tripolys polymorphism -i no_2wnu.csv -o no_3wnu.csv -c 3-wnu -f deny
 tripolys polymorphism -i no_3wnu.csv -o no_kmm.csv -c kmm -f deny
 ```
 
-We also found the smallest NP-hard triads: (TODO link edge lists here? TODO how to generate small triads?)
+We also found the smallest NP-hard triads: (TODO link edge lists here?)
 The triads can be found [here](file:data/20/triads/no_kmm.csv ).
 
 ```
@@ -103,30 +111,29 @@ TODO
 
 ### A tree not known to be in NL (Section 7.2.1)
 
-The trees not known to be in NL are [here](https://gitlab.com/WhatDothLife/tripolys_data/-/blob/master/16/no_majority.csv) and this is how you can test them:
+The trees not known to be in NL are
+[here](https://gitlab.com/WhatDothLife/tripolys_data/-/blob/master/16/no_majority.csv)
+and this is how you can test them:
 
 ```
 cd data/16
-./tripolys polymorphism --input cores.edges --output no_majority.csv --condition majority --filter deny
+./tripolys polymorphism -i cores.edges -o no_majority.csv -c majority -f deny
 ```
 (TODO how to run the tests for KK, HMcK, J?)
 
-### Trees that might be P-hard (Section 7.2.2)  
+### Trees that might be P-hard (Section 7.2.2)
 
 TODO
 
 Other usage examples
 -----------------
-Use --help
+Use `--help`
 
 ```
-./tripolys polymorphism -H 10110000,100111,010111 -c commutative
+./tripolys polymorphism -g graph -c 3-wnu -I
 ```
 ```
-./tripolys polymorphism -H graph.csv -c 3-wnu -I
-```
-```
-./tripolys homomorphism -f graph.csv -t t3
+./tripolys homomorphism -f graph -t t3
 ```
 ```
 ./tripolys homomorphism -f p5 -t c2

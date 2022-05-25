@@ -1,14 +1,11 @@
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
-use itertools::Itertools;
+use time::OffsetDateTime;
+use tripolys::digraph::formats::to_edge_list;
 
 use std::io::{BufWriter, Write};
-use std::path::{Path, PathBuf};
-use std::str::FromStr;
-use std::time::Instant;
+use std::path::PathBuf;
 
-use tripolys::digraph::ToGraph;
-use tripolys::tree::generate::{Config, Generator};
-use tripolys::tree::Node;
+use tripolys::tree::generate::{Config, Stats, TreeGenerator};
 
 use crate::CmdResult;
 
@@ -81,22 +78,26 @@ pub fn command(args: &ArgMatches) -> CmdResult {
         max_arity,
         core,
         triad,
+        start,
+        end,
+        stats: Some(Stats::default()),
     };
 
-    let mut generator = Generator::with_config(config);
+    let mut generator = TreeGenerator::with_config(config);
 
-    for order in start..=end {
-        println!("\n> #vertices: {}", order);
+    for num_vertices in start..=end {
+        println!("\n> #vertices: {}", num_vertices);
         println!("  > Generating trees...");
-        let start = Instant::now();
-        let trees = generator.resume(order)?;
-        println!("    - total_time: {:?}", start.elapsed());
-        let order_dir = if order < 10 {
-            String::from("0") + &order.to_string()
+        let start = OffsetDateTime::now_utc();
+        let trees = generator.next();
+        let end = OffsetDateTime::now_utc();
+        println!("    - total_time: {}s", (end - start).as_seconds_f32());
+        let dir_name = if num_vertices < 10 {
+            String::from("0") + &num_vertices.to_string()
         } else {
-            order.to_string()
+            num_vertices.to_string()
         };
-        let mut path = PathBuf::from(data_path).join(order_dir);
+        let mut path = PathBuf::from(data_path).join(dir_name);
         if triad {
             path.push("triads");
         }
@@ -104,28 +105,11 @@ pub fn command(args: &ArgMatches) -> CmdResult {
         let file_name = if core { "cores.edges" } else { "trees.edges" };
         let mut writer = BufWriter::new(std::fs::File::create(path.join(file_name))?);
 
-        for tree in &trees {
-            let _ = writer.write(format!("{}\n", tree.to_graph()).as_bytes());
+        for tree in trees {
+            to_edge_list(&tree, &mut writer)?;
+            writer.write("\n".as_bytes())?;
         }
     }
 
     Ok(())
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct RegistryError;
-
-impl std::fmt::Display for RegistryError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "No Polymorphism registered with name")
-    }
-}
-
-impl std::error::Error for RegistryError {}
-
-fn from_file<P: AsRef<Path>>(path: P) -> Result<Vec<Node>, std::io::Error> {
-    Ok(std::fs::read_to_string(path)?
-        .lines()
-        .map(|l| Node::from_str(l).unwrap())
-        .collect())
 }

@@ -6,13 +6,14 @@ use rayon::prelude::*;
 use serde::ser::SerializeStruct;
 use serde::{Serialize, Serializer};
 use time::Duration;
+use tripolys::digraph::formats::from_edge_list;
+use tripolys::digraph::AdjMatrix;
 
 use std::fmt::Display;
 use std::path::Path;
 
-use tripolys::algebra::conditions::*;
 use tripolys::algebra::MetaProblem;
-use tripolys::digraph::{from_edge_list, AdjMap};
+use tripolys::algebra::{conditions::*, Options};
 
 use crate::{parse_graph, CmdResult};
 
@@ -28,13 +29,13 @@ pub fn cli() -> App<'static, 'static> {
             Arg::with_name("idempotent")
                 .short("I")
                 .long("idempotent")
-                .help("Require idempotence"),
+                .help("Require idempotence TODO"),
         )
         .arg(
             Arg::with_name("conservative")
                 .short("C")
                 .long("conservative")
-                .help("Require conservativity"),
+                .help("Require conservativity TODO"),
         )
         .arg(
             Arg::with_name("list")
@@ -48,7 +49,7 @@ pub fn cli() -> App<'static, 'static> {
                 .long("condition")
                 .takes_value(true)
                 .value_name("NAME")
-                .help("The name of the condition the polymorphism must satisfy")
+                .help("The name of the condition the polymorphism must satisfy (see all conditions with --list)")
                 .required_unless("list"),
         )
         .arg(
@@ -63,7 +64,7 @@ pub fn cli() -> App<'static, 'static> {
                 .long("graph")
                 .takes_value(true)
                 .value_name("H")
-                .help("Check for polymorphisms of single graph H"),
+                .help("Check for polymorphisms of graph H"),
         )
         .arg(
             Arg::with_name("input")
@@ -72,7 +73,7 @@ pub fn cli() -> App<'static, 'static> {
                 .requires("output")
                 .takes_value(true)
                 .value_name("FILE")
-                .help("The file from where to read in graphs"),
+                .help("Check for polymorphisms of each graph in FILE"),
         )
         .arg(
             Arg::with_name("output")
@@ -81,7 +82,7 @@ pub fn cli() -> App<'static, 'static> {
                 .requires("input")
                 .takes_value(true)
                 .value_name("FILE")
-                .help("The file to which the results are written"),
+                .help("The name of the file to which the results are written"),
         )
         .arg(
             Arg::with_name("filter")
@@ -105,12 +106,14 @@ pub fn command(args: &ArgMatches) -> CmdResult {
     }
 
     let condition = args.value_of("condition").unwrap();
-    let conservative = args.is_present("conservative");
-    let idempotent = args.is_present("idempotent");
+    let config = Options::new()
+        .level_wise(args.is_present("level-wise"))
+        .conservative(args.is_present("conservative"))
+        .idempotent(args.is_present("idempotent"));
 
     if let (Some(input_path), Some(output_path)) = (args.value_of("input"), args.value_of("output"))
     {
-        let mut graphs = Vec::new();
+        let mut graphs: Vec<AdjMatrix> = Vec::new();
         let lines = std::fs::read_to_string(input_path)?;
         let mut lines = lines.lines();
 
@@ -129,17 +132,8 @@ pub fn command(args: &ArgMatches) -> CmdResult {
         let start = std::time::Instant::now();
 
         graphs.into_par_iter().for_each(|item| {
-            let mut problem = if args.is_present("level-wise") {
-                create_meta_problem_tree(&item, condition).unwrap()
-            } else {
-                create_meta_problem(&item, condition).unwrap()
-            };
-            if conservative {
-                problem.conservative();
-            }
-            if idempotent {
-                problem.idempotent();
-            }
+            // TODO remove clone --------------------------v
+            let problem = create_meta_problem(item.clone(), condition, config).unwrap();
             let mut solver = BTSolver::new(&problem);
             let found = solver.solution_exists();
 
@@ -169,19 +163,8 @@ pub fn command(args: &ArgMatches) -> CmdResult {
         return Ok(());
     }
 
-    let h = parse_graph(args.value_of("graph").unwrap())?;
-    let mut problem = if args.is_present("level-wise") {
-        create_meta_problem_tree(&h, condition)?
-    } else {
-        create_meta_problem(&h, condition)?
-    };
-
-    if conservative {
-        problem.conservative();
-    }
-    if idempotent {
-        problem.idempotent();
-    }
+    let h: AdjMatrix = parse_graph(args.value_of("graph").unwrap())?;
+    let problem = create_meta_problem(h, condition, config)?;
     let mut solver = BTSolver::new(&problem);
 
     println!("\n> Checking for polymorphism...");
@@ -189,7 +172,7 @@ pub fn command(args: &ArgMatches) -> CmdResult {
     if solver.solution_exists() {
         println!("{}", "  ✓ Exists\n".to_string().green());
     } else {
-        println!("{}", "  \u{2718} Doesn't exist\n".to_string().red());
+        println!("{}", "  ✘ Doesn't exist\n".to_string().red());
     };
 
     if let Some(stats) = solver.stats() {
@@ -200,72 +183,40 @@ pub fn command(args: &ArgMatches) -> CmdResult {
 }
 
 #[derive(Debug, Clone, PartialEq)]
-pub struct ParseConditionError;
+pub struct MPError;
 
-impl std::fmt::Display for ParseConditionError {
+impl std::fmt::Display for MPError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(f, "No condition registered with that name")
     }
 }
 
-impl std::error::Error for ParseConditionError {}
+impl std::error::Error for MPError {}
 
-fn create_meta_problem(h: &AdjMap<u32>, s: &str) -> Result<MetaProblem<u32>, ParseConditionError> {
+fn create_meta_problem(h: AdjMatrix, s: &str, config: Options) -> Result<MetaProblem, MPError> {
     match s {
-        "majority" => Ok(MetaProblem::new(h, Majority)),
-        "siggers" => Ok(MetaProblem::new(h, Siggers)),
-        "kmm" => Ok(MetaProblem::new(h, Kmm)),
+        "majority" => Ok(MetaProblem::new(h, Majority, config)),
+        "siggers" => Ok(MetaProblem::new(h, Siggers, config)),
+        "kmm" => Ok(MetaProblem::new(h, Kmm, config)),
         _ => {
             if let Some((pr, su)) = s.split_once('-') {
                 if let Ok(pr) = pr.parse() {
                     match su {
-                        "wnu" => Ok(MetaProblem::new(h, Wnu(pr))),
-                        "nu" => Ok(MetaProblem::new(h, Nu(pr))),
+                        "wnu" => Ok(MetaProblem::new(h, Wnu(pr), config)),
+                        "nu" => Ok(MetaProblem::new(h, Nu(pr), config)),
                         // "sigma" => Ok(MetaProblem::new(h, Sigma(pr))),
-                        "j" => Ok(MetaProblem::new(h, Jonsson(pr))),
-                        "hm" => Ok(MetaProblem::new(h, HagemanMitschke(pr))),
-                        "kk" => Ok(MetaProblem::new(h, KearnesKiss(pr))),
-                        "hmck" => Ok(MetaProblem::new(h, HobbyMcKenzie(pr))),
-                        "nn" => Ok(MetaProblem::new(h, Noname(pr))),
-                        &_ => Err(ParseConditionError),
+                        "j" => Ok(MetaProblem::new(h, Jonsson(pr), config)),
+                        "hm" => Ok(MetaProblem::new(h, HagemanMitschke(pr), config)),
+                        "kk" => Ok(MetaProblem::new(h, KearnesKiss(pr), config)),
+                        "hmck" => Ok(MetaProblem::new(h, HobbyMcKenzie(pr), config)),
+                        "nn" => Ok(MetaProblem::new(h, Noname(pr), config)),
+                        &_ => Err(MPError),
                     }
                 } else {
-                    Err(ParseConditionError)
+                    Err(MPError)
                 }
             } else {
-                Err(ParseConditionError)
-            }
-        }
-    }
-}
-
-fn create_meta_problem_tree(
-    h: &AdjMap<u32>,
-    s: &str,
-) -> Result<MetaProblem<u32>, ParseConditionError> {
-    match s {
-        "majority" => Ok(MetaProblem::<u32>::from_balanced(h, Majority)),
-        "siggers" => Ok(MetaProblem::<u32>::from_balanced(h, Siggers)),
-        "kmm" => Ok(MetaProblem::<u32>::from_balanced(h, Kmm)),
-        _ => {
-            if let Some((pr, su)) = s.split_once('-') {
-                if let Ok(pr) = pr.parse() {
-                    match su {
-                        "wnu" => Ok(MetaProblem::<u32>::from_balanced(h, Wnu(pr))),
-                        "nu" => Ok(MetaProblem::<u32>::from_balanced(h, Nu(pr))),
-                        // "sigma" => Ok(MetaProblem::<u32>::from_balanced(h, Sigma(pr))),
-                        "j" => Ok(MetaProblem::<u32>::from_balanced(h, Jonsson(pr))),
-                        "hm" => Ok(MetaProblem::<u32>::from_balanced(h, HagemanMitschke(pr))),
-                        "kk" => Ok(MetaProblem::<u32>::from_balanced(h, KearnesKiss(pr))),
-                        "hmck" => Ok(MetaProblem::<u32>::from_balanced(h, HobbyMcKenzie(pr))),
-                        "nn" => Ok(MetaProblem::new(h, Noname(pr))),
-                        &_ => Err(ParseConditionError),
-                    }
-                } else {
-                    Err(ParseConditionError)
-                }
-            } else {
-                Err(ParseConditionError)
+                Err(MPError)
             }
         }
     }
@@ -322,8 +273,14 @@ impl Serialize for Record {
         state.serialize_field("found", &self.found)?;
         state.serialize_field("backtracks", &self.backtracks)?;
         state.serialize_field("ac3_time", &format!("{}s", self.ac3_time.as_seconds_f32()))?;
-        state.serialize_field("mac3_time", &format!("{}s", self.mac3_time.as_seconds_f32()))?;
-        state.serialize_field("total_time", &format!("{}s", self.total_time.as_seconds_f32()))?;
+        state.serialize_field(
+            "mac3_time",
+            &format!("{}s", self.mac3_time.as_seconds_f32()),
+        )?;
+        state.serialize_field(
+            "total_time",
+            &format!("{}s", self.total_time.as_seconds_f32()),
+        )?;
         state.end()
     }
 }
@@ -337,8 +294,8 @@ impl SearchLog {
         SearchLog::default()
     }
 
-    pub fn add(&mut self, tree: impl Display, found: bool, stats: &BTStats) {
-        self.0.push(Record::new(tree, found, stats));
+    pub fn add(&mut self, graph: impl Display, found: bool, stats: &BTStats) {
+        self.0.push(Record::new(graph, found, stats));
     }
 
     pub fn write_csv<P: AsRef<Path>>(&self, path: P) -> Result<(), std::io::Error> {

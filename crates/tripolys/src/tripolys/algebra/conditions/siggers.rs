@@ -1,4 +1,6 @@
-use super::{Arity, HeightOne, Operation, Partition, Precolor, Set, Tuple};
+use crate::digraph::traits::Vertices;
+
+use super::{Arity, HeightOne, Operation, Partition, Precolor};
 
 /// s(a,r,e,a) = s(r,a,r,e)
 #[derive(Clone, Copy, Debug)]
@@ -11,15 +13,22 @@ impl Operation for Siggers {
         4
     }
 
-    fn partition<V: Copy + PartialEq>(&self, vertices: Set<V>) -> Partition<Tuple<V>> {
+    fn partition<G>(&self, graph: &G) -> Partition<Vec<G::Vertex>>
+    where
+        for<'a> G: Vertices<'a>,
+    {
         let mut vec = Vec::new();
 
-        for (&x, &y, &z) in iproduct!(&vertices, &vertices, &vertices) {
-            if x != y || y != z {
-                if y == z {
-                    vec.push(vec![vec![x, y, z, x], vec![y, x, y, z], vec![x, z, x, y]]);
-                } else if x != z {
-                    vec.push(vec![vec![x, y, z, x], vec![y, x, y, z]]);
+        for x in graph.vertices() {
+            for y in graph.vertices() {
+                for z in graph.vertices() {
+                    if x != y || y != z {
+                        if y == z {
+                            vec.push(vec![vec![x, y, z, x], vec![y, x, y, z], vec![x, z, x, y]]);
+                        } else if x != z {
+                            vec.push(vec![vec![x, y, z, x], vec![y, x, y, z]]);
+                        }
+                    }
                 }
             }
         }

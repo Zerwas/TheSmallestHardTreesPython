@@ -1,23 +1,15 @@
 //! # Tripolys
 //!
-//! `tripolys` is a program for generating triads and checking for polymorphisms
-//! on them.
-//!
-//! For a given digraph H the complexity of the constraint satisfaction problem
-//! for H, also called CSP(H), only depends on the set of polymorphisms of H.
-//! The program aims to study the structure of oriented trees with CSPs of
-//! varying complexity.
-//! To do this we focus on the case where H is a triad, e.g., an orientation of
-//! a tree which has a single vertex of degree 3 and otherwise only vertices of
-//! degree 2 and 1.
+//! `tripolys` is a program for checking homomorphisms and testing polymorphism
+//! conditions of directed graphs. It also implements an algorithm to generate
+//! orientations of trees, and core orientations of trees.
 
 use std::error::Error;
-use std::str::FromStr;
+use std::fmt::Debug;
 
 use clap::{App, AppSettings};
 use colored::*;
-use tripolys::digraph::AdjMap;
-use tripolys::tree::{Node, Triad};
+use tripolys::digraph::{classes::*, formats::from_csv, AdjMatrix};
 
 mod dot;
 mod endomorphism;
@@ -68,22 +60,38 @@ fn main() {
     }
 }
 
-fn parse_graph(s: &str) -> Result<AdjMap<u32>, Box<dyn Error>> {
-    if s.len() < 4 {
-        let g = AdjMap::from_str(s)?;
-        return Ok(g);
+fn parse_graph(s: &str) -> Result<AdjMatrix, Box<dyn Error>> {
+    if let Ok(class) = parse_class(s) {
+        return Ok(class);
     }
-    if s.ends_with(".csv") {
-        let g = tripolys::digraph::from_csv(s)?;
-        return Ok(g);
+    if let Ok(triad) = parse_triad(s) {
+        return Ok(triad);
     }
-    if let Ok(triad) = s.parse::<Triad>() {
-        return Ok(triad.into());
-    }
-    if let Ok(tree) = s.parse::<Node>() {
-        return Ok(tree.into());
+    if let Ok(mut file) = std::fs::File::open(s) {
+        if let Ok(g) = from_csv(&mut file) {
+            return Ok(g);
+        }
     }
     Err(Box::new(ParseGraphError))
+}
+
+fn parse_class<G>(s: &str) -> Result<G, ClassNotFound>
+where
+    G: Buildable,
+    G::Vertex: Debug,
+{
+    if let Some(g) = s.chars().next() {
+        if let Ok(n) = &s[1..].parse::<usize>() {
+            match g {
+                'k' => return Ok(complete_digraph(*n)),
+                'c' => return Ok(directed_cycle(*n)),
+                'p' => return Ok(directed_path(*n)),
+                't' => return Ok(transitive_tournament(*n)),
+                _ => return Err(ClassNotFound),
+            }
+        }
+    }
+    Err(ClassNotFound)
 }
 
 #[derive(Debug)]
@@ -96,3 +104,73 @@ impl std::fmt::Display for ParseGraphError {
 }
 
 impl std::error::Error for ParseGraphError {}
+
+#[derive(Debug)]
+pub struct ClassNotFound;
+
+impl std::fmt::Display for ClassNotFound {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "No graph class registered with that name")
+    }
+}
+
+impl std::error::Error for ClassNotFound {}
+
+pub fn parse_triad<G>(s: &str) -> Result<G, ParseTriadError>
+where
+    G: Buildable,
+{
+    if s.matches(',').count() != 2 {
+        return Err(ParseTriadError::NumArms);
+    }
+
+    let nvertices = s.len() - 2;
+    let mut g = G::with_capacities(nvertices, nvertices - 2);
+    let root_id = g.add_vertex();
+    let mut prev_id = root_id;
+
+    for arm in s.split(',') {
+        for (i, c) in arm.chars().enumerate() {
+            let id = g.add_vertex();
+
+            match c {
+                '1' => {
+                    if i == 0 {
+                        g.add_edge(id, root_id);
+                    } else {
+                        g.add_edge(id, prev_id);
+                    }
+                }
+                '0' => {
+                    if i == 0 {
+                        g.add_edge(root_id, id);
+                    } else {
+                        g.add_edge(prev_id, id);
+                    }
+                }
+                c => {
+                    return Err(ParseTriadError::InvalidCharacter(c));
+                }
+            }
+            prev_id = id;
+        }
+    }
+    Ok(g)
+}
+
+#[derive(Debug)]
+pub enum ParseTriadError {
+    NumArms,
+    InvalidCharacter(char),
+}
+
+impl std::fmt::Display for ParseTriadError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            ParseTriadError::NumArms => write!(f, "A triad must have exactly 3 arms!"),
+            ParseTriadError::InvalidCharacter(c) => write!(f, "Could not parse: {}", c),
+        }
+    }
+}
+
+impl std::error::Error for ParseTriadError {}

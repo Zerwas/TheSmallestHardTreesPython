@@ -3,24 +3,25 @@ use std::str::FromStr;
 use std::sync::Arc;
 
 use itertools::Itertools;
+use num_iter::{range, Range};
 
-use crate::digraph::{AdjMap, ToGraph};
+use crate::digraph::traits::{Digraph, Edges, GraphType, Vertices};
 
-use super::{Balanced, Rooted, Tree, Triad};
+use super::Rooted;
 
 /// A recursive tree data-structure
 #[derive(Clone, Debug, PartialOrd, PartialEq)]
-pub struct Node {
-    pub num_nodes: usize,
-    pub height: usize,
-    pub max_arity: usize,
-    children: Vec<(Arc<Node>, bool)>,
+pub struct TreeNode {
+    pub(crate) num_nodes: usize,
+    pub(crate) height: usize,
+    pub(crate) max_arity: usize,
+    children: Vec<(Arc<TreeNode>, bool)>,
 }
 
-impl Node {
+impl TreeNode {
     /// Returns a tree with only one node, also referred to as 'leaf'.
-    pub const fn leaf() -> Node {
-        Node {
+    pub const fn leaf() -> TreeNode {
+        TreeNode {
             num_nodes: 1,
             height: 0,
             max_arity: 0,
@@ -28,8 +29,7 @@ impl Node {
         }
     }
 
-    /// Returns the number of childern of the root vertex, also referred to as
-    /// its 'arity'.
+    /// Returns the number of childern, also referred to as 'arity'.
     pub fn arity(&self) -> usize {
         self.children.len()
     }
@@ -39,14 +39,14 @@ impl Node {
     /// A centered tree is a rooted tree where at least two children of the root
     /// have height d−1.
     pub fn is_centered(&self) -> bool {
-        let mut child_found = false;
+        let mut found = false;
 
         for (child, _) in &self.children {
             if child.height == self.height - 1 {
-                if child_found {
+                if found {
                     return true;
                 }
-                child_found = true;
+                found = true;
             }
         }
         false
@@ -93,83 +93,90 @@ impl Node {
         root_found
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (Arc<Node>, bool)> + '_ {
+    pub fn iter(&self) -> impl Iterator<Item = (Arc<TreeNode>, bool)> + '_ {
         self.children.iter().cloned()
     }
 }
 
-impl Tree for Node {}
+impl GraphType for TreeNode {
+    type Vertex = usize;
+}
 
-impl ToGraph for Node {
-    type V = u32;
+impl Vertices<'_> for TreeNode {
+    type VertexIter = Range<usize>;
 
-    fn to_graph(&self) -> AdjMap<Self::V> {
-        fn inner(id: &mut u32, tree: &Node, graph: &mut AdjMap<u32>) {
-            let id_parent = *id;
+    fn vertices(&self) -> Self::VertexIter {
+        range(0, self.vertex_count())
+    }
 
-            for (child, dir) in &tree.children {
-                *id += 1;
-                graph.add_vertex(*id);
+    fn vertex_count(&self) -> usize {
+        self.num_nodes
+    }
 
-                if *dir {
-                    graph.add_edge(&id_parent, id);
-                } else {
-                    graph.add_edge(id, &id_parent);
-                }
-                inner(id, child, graph);
-            }
-        }
-
-        let mut id = 0;
-        let mut graph = AdjMap::new();
-        graph.add_vertex(id);
-        inner(&mut id, self, &mut graph);
-
-        graph
+    fn has_vertex(&self, v: Self::Vertex) -> bool {
+        v < self.num_nodes
     }
 }
 
-impl From<Triad> for Node {
-    fn from(triad: Triad) -> Node {
+fn edges(tree: &TreeNode) -> Vec<(usize, usize)> {
+    fn inner(id: &mut usize, tree: &TreeNode, edges: &mut Vec<(usize, usize)>) {
+        let id_parent = *id;
+
+        for (child, dir) in &tree.children {
+            *id += 1;
+
+            if *dir {
+                edges.push((id_parent, *id));
+            } else {
+                edges.push((*id, id_parent));
+            }
+            inner(id, child, edges);
+        }
+    }
+
+    let mut id = 0;
+    let mut edges = Vec::new();
+    inner(&mut id, tree, &mut edges);
+
+    edges
+}
+
+pub struct EdgeIter(std::vec::IntoIter<(usize, usize)>);
+
+impl Iterator for EdgeIter {
+    type Item = (usize, usize);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        self.0.next()
+    }
+}
+
+impl<'a> Edges<'a> for TreeNode {
+    type EdgeIter = EdgeIter;
+
+    fn edges(&'a self) -> Self::EdgeIter {
+        EdgeIter(edges(self).into_iter())
+    }
+
+    fn edge_count(&self) -> usize {
+        self.vertex_count() - 1
+    }
+
+    fn has_edge(&self, u: Self::Vertex, v: Self::Vertex) -> bool {
         todo!()
     }
 }
 
-impl From<Node> for AdjMap<u32> {
-    fn from(tree: Node) -> AdjMap<u32> {
-        (&tree).to_graph()
+impl Digraph<'_> for TreeNode {}
+
+impl Rooted<'_> for TreeNode {
+    fn root(&self) -> Self::Vertex {
+        0
     }
 }
 
-impl Rooted for Node {}
-
-impl Balanced for Node {
-    fn level(&self, id: &u32) -> Option<usize> {
-        let mut rank = 0;
-        let mut count = *id as usize;
-        let mut node = self;
-
-        while count > 0 {
-            for (child, dir) in &node.children {
-                if count <= child.num_nodes {
-                    if *dir {
-                        rank -= 1;
-                    } else {
-                        rank += 1;
-                    }
-                    count -= 1;
-                    node = child.as_ref();
-                    break;
-                }
-                count -= child.num_nodes;
-            }
-        }
-        Some(rank)
-    }
-}
-
-impl FromIterator<(Arc<Node>, bool)> for Node {
-    fn from_iter<T: IntoIterator<Item = (Arc<Node>, bool)>>(iter: T) -> Node {
+impl FromIterator<(Arc<TreeNode>, bool)> for TreeNode {
+    fn from_iter<T: IntoIterator<Item = (Arc<TreeNode>, bool)>>(iter: T) -> TreeNode {
         let mut num_nodes = 1;
         let mut height = 0;
         let mut max_arity = 0;
@@ -182,7 +189,7 @@ impl FromIterator<(Arc<Node>, bool)> for Node {
             children.push((child, dir));
         }
 
-        Node {
+        TreeNode {
             num_nodes,
             height: height + 1,
             max_arity: max(max_arity, children.len()),
@@ -191,11 +198,11 @@ impl FromIterator<(Arc<Node>, bool)> for Node {
     }
 }
 
-impl FromStr for Node {
-    type Err = ParseNodeError;
+impl FromStr for TreeNode {
+    type Err = ParseTreeNodeError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut children_stack = Vec::<Vec<(Arc<Node>, bool)>>::new();
+        let mut children_stack = Vec::<Vec<(Arc<TreeNode>, bool)>>::new();
         let mut dir_stack = Vec::new();
 
         let mut chars = s.chars().tuple_windows();
@@ -210,7 +217,7 @@ impl FromStr for Node {
                             children_stack
                                 .last_mut()
                                 .unwrap()
-                                .push((Arc::new(Node::leaf()), dir));
+                                .push((Arc::new(TreeNode::leaf()), dir));
                         }
                         _ => {}
                     }
@@ -222,7 +229,7 @@ impl FromStr for Node {
                             children_stack
                                 .last_mut()
                                 .unwrap()
-                                .push((Arc::new(Node::leaf()), dir));
+                                .push((Arc::new(TreeNode::leaf()), dir));
                         }
                         _ => {}
                     }
@@ -237,44 +244,44 @@ impl FromStr for Node {
                     children_stack
                         .last_mut()
                         .unwrap()
-                        .push((Arc::new(Node::from_iter(children)), dir));
+                        .push((Arc::new(TreeNode::from_iter(children)), dir));
                 }
                 (e, _) => {
-                    return Err(ParseNodeError::InvalidCharacter(e));
+                    return Err(ParseTreeNodeError::InvalidCharacter(e));
                 }
             }
         }
         if let Some(v) = children_stack.pop() {
-            Ok(Node::from_iter(v))
+            Ok(TreeNode::from_iter(v))
         } else {
-            return Err(ParseNodeError::InvalidCharacter('a'));
+            return Err(ParseTreeNodeError::InvalidCharacter('a'));
         }
     }
 }
 
 #[derive(Debug)]
-pub enum ParseNodeError {
+pub enum ParseTreeNodeError {
     InvalidCharacter(char),
     // Delimiter
 }
 
-impl std::fmt::Display for ParseNodeError {
+impl std::fmt::Display for ParseTreeNodeError {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
         match self {
-            ParseNodeError::InvalidCharacter(c) => write!(f, "Could not parse: {}", c),
+            ParseTreeNodeError::InvalidCharacter(c) => write!(f, "Could not parse: {}", c),
         }
     }
 }
 
-impl std::error::Error for ParseNodeError {
+impl std::error::Error for ParseTreeNodeError {
     fn description(&self) -> &str {
         match self {
-            ParseNodeError::InvalidCharacter(_) => "Only 0, 1, [, ] allowed!",
+            ParseTreeNodeError::InvalidCharacter(_) => "Only 0, 1, [, ] allowed!",
         }
     }
 }
 
-impl std::fmt::Display for Node {
+impl std::fmt::Display for TreeNode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut s = String::new();
 

@@ -1,11 +1,13 @@
 use itertools::Itertools;
 
-use super::{Arity, Linear, Partition, Precolor, Set, Tuple, Vertex};
+use crate::digraph::traits::Vertices;
+
+use super::{Arity, Linear, Partition, Precolor};
 
 pub struct HobbyMcKenzie(pub usize);
 
 impl Precolor for HobbyMcKenzie {
-    fn precolor<V: PartialEq + Copy>(&self, (f, v): &(usize, Tuple<V>)) -> Option<V> {
+    fn precolor<V: Copy + PartialEq>(&self, (f, v): &(usize, Vec<V>)) -> Option<V> {
         if *f == 0 {
             return Some(v[0]);
         }
@@ -21,17 +23,20 @@ impl Linear for HobbyMcKenzie {
         vec![3; 2 * self.0 + 3]
     }
 
-    fn partition<V: Vertex>(&self, set: Set<V>) -> Partition<(usize, Tuple<V>)> {
+    fn partition<G>(&self, g: &G) -> Partition<(usize, Vec<G::Vertex>)>
+    where
+        for<'a> G: Vertices<'a>,
+    {
         let mut partition = Vec::new();
 
-        for &x in &set {
+        for x in g.vertices() {
             partition.push(
                 (0..(2 * self.0 + 3))
                     .map(|i| (i, vec![x, x, x]))
                     .collect_vec(),
             );
 
-            for &y in &set {
+            for y in g.vertices() {
                 if x == y {
                     continue;
                 }
