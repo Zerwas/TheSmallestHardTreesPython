@@ -172,7 +172,7 @@ pub fn command(args: &ArgMatches) -> CmdResult {
     if solver.solution_exists() {
         println!("{}", "  ✓ Exists\n".to_string().green());
     } else {
-        println!("{}", "  ✘ Doesn't exist\n".to_string().red());
+        println!("{}", "  ! Doesn't exist\n".to_string().red());
     };
 
     if let Some(stats) = solver.stats() {
