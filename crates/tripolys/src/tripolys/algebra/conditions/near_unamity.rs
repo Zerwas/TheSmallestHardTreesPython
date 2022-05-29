@@ -16,13 +16,13 @@ impl Operation for Majority {
     where
         for<'a> G: Vertices<'a>,
     {
-        Nu(3).partition(vertices)
+        nu(3).partition(vertices)
     }
 }
 
 impl Operation for Wnu {
     fn arity(&self) -> Arity {
-        self.0
+        self.arity
     }
 
     fn partition<G>(&self, vertices: &G) -> Partition<Vec<G::Vertex>>
@@ -35,7 +35,7 @@ impl Operation for Wnu {
 
 impl Operation for Nu {
     fn arity(&self) -> Arity {
-        self.0
+        self.arity
     }
 
     fn partition<G>(&self, vertices: &G) -> Partition<Vec<G::Vertex>>
@@ -48,7 +48,11 @@ impl Operation for Nu {
 
 /// m(x,x,y) = m(x,y,x) = m(y,x,x) = m(x,x,x) = x
 #[derive(Clone, Copy, Debug)]
-pub struct Majority;
+pub struct Majority {}
+
+pub fn majority() -> Majority {
+    Majority {}
+}
 
 impl Precolor for Majority {
     fn precolor<V: PartialEq + Copy>(&self, (_, v): &(usize, Vec<V>)) -> Option<V> {
@@ -62,7 +66,13 @@ impl Precolor for Majority {
 
 /// f(x,...,x,y) = f(x,...,x,y,x) = ... = f(y,x,...,x) = x
 #[derive(Clone, Copy, Debug)]
-pub struct Nu(pub usize);
+pub struct Nu {
+    arity: usize,
+}
+
+pub fn nu(arity: usize) -> Nu {
+    Nu { arity }
+}
 
 impl Precolor for Nu {
     fn precolor<V: Copy + Eq + Hash>(&self, (_, v): &(usize, Vec<V>)) -> Option<V> {
@@ -76,7 +86,13 @@ impl Precolor for Nu {
 
 /// f(x,...,x,y) = f(x,...,x,y,x) = ... = f(y,x,...,x)
 #[derive(Clone, Copy, Debug)]
-pub struct Wnu(pub usize);
+pub struct Wnu {
+    arity: usize,
+}
+
+pub fn wnu(arity: usize) -> Wnu {
+    Wnu { arity }
+}
 
 impl Precolor for Wnu {}
 

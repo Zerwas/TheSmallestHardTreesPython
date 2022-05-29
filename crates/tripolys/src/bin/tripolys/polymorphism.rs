@@ -206,21 +206,21 @@ impl std::error::Error for MPError {}
 
 fn create_meta_problem(h: &AdjMatrix, s: &str, config: Config) -> Result<MetaProblem, MPError> {
     match s {
-        "majority" => Ok(MetaProblem::new(h, Majority, config)),
-        "siggers" => Ok(MetaProblem::new(h, Siggers, config)),
-        "kmm" => Ok(MetaProblem::new(h, Kmm, config)),
+        "majority" => Ok(MetaProblem::new(h, majority(), config)),
+        "siggers" => Ok(MetaProblem::new(h, siggers(), config)),
+        "kmm" => Ok(MetaProblem::new(h, kmm(), config)),
         _ => {
             if let Some((pr, su)) = s.split_once('-') {
                 if let Ok(pr) = pr.parse() {
                     match su {
-                        "wnu" => Ok(MetaProblem::new(h, Wnu(pr), config)),
-                        "nu" => Ok(MetaProblem::new(h, Nu(pr), config)),
+                        "wnu" => Ok(MetaProblem::new(h, wnu(pr), config)),
+                        "nu" => Ok(MetaProblem::new(h, nu(pr), config)),
                         // "sigma" => Ok(MetaProblem::new(h, Sigma(pr))),
-                        "j" => Ok(MetaProblem::new(h, Jonsson(pr), config)),
-                        "hm" => Ok(MetaProblem::new(h, HagemanMitschke(pr), config)),
-                        "kk" => Ok(MetaProblem::new(h, KearnesKiss(pr), config)),
-                        "hmck" => Ok(MetaProblem::new(h, HobbyMcKenzie(pr), config)),
-                        "nn" => Ok(MetaProblem::new(h, Noname(pr), config)),
+                        "j" => Ok(MetaProblem::new(h, jn(pr), config)),
+                        "hm" => Ok(MetaProblem::new(h, hm(pr), config)),
+                        "kk" => Ok(MetaProblem::new(h, kk(pr), config)),
+                        "hmck" => Ok(MetaProblem::new(h, hmck(pr), config)),
+                        "nn" => Ok(MetaProblem::new(h, nn(pr), config)),
                         &_ => Err(MPError),
                     }
                 } else {

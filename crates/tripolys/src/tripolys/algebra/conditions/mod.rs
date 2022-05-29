@@ -11,15 +11,14 @@ mod noname;
 mod siggers;
 mod sigma;
 
-pub use hageman_mitschke::HagemanMitschke;
-pub use hobby_mckenzie::HobbyMcKenzie;
-pub use jonsson::Jonsson;
-pub use kiss_kearnes::KearnesKiss;
-pub use kmm::Kmm;
-pub use near_unamity::{Majority, Nu, Wnu};
-pub use noname::Noname;
-pub use siggers::Siggers;
-// pub use sigma::Sigma;
+pub use hageman_mitschke::*;
+pub use hobby_mckenzie::*;
+pub use jonsson::*;
+pub use kiss_kearnes::*;
+pub use kmm::*;
+pub use near_unamity::*;
+pub use noname::*;
+pub use siggers::*;
 
 use std::hash::Hash;
 
@@ -89,7 +88,7 @@ mod tests {
             // }
         }
 
-        test(Siggers);
+        test(siggers());
         // test(Sigma(2));
         // test(Sigma(3));
         // test(Wnu(3));
