@@ -152,6 +152,7 @@ impl<T> AdjMap<T> {
         }
     }
 
+    #[allow(dead_code)]
     pub fn with_capacities(nvertices: usize, nedges: usize) -> AdjMap<T> {
         AdjMap {
             lists: IndexMap::with_capacity(nvertices),
@@ -315,6 +316,7 @@ impl<T: Hash + Eq + Clone> AdjMap<T> {
     ///
     /// assert_eq!(graph.vertex_count(), 2);
     /// ```
+    #[allow(dead_code)]
     pub fn remove_vertex(&mut self, v: &T) {
         if let Some((out_edges, in_edges)) = self.lists.remove(v) {
             // remove vertex from in-edge list of other vertices
@@ -396,6 +398,7 @@ impl<T: Hash + Eq + Clone> AdjMap<T> {
     ///
     /// assert_eq!(graph.edge_count(), 2);
     /// ```
+    #[allow(dead_code)]
     pub fn remove_edge(&mut self, u: &T, v: &T) -> bool {
         if self.has_edge(u, v) {
             self.lists.get_mut(u).unwrap().0.remove(v);

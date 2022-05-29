@@ -162,7 +162,7 @@ impl<'a> Edges<'a> for Tree {
         self.vertex_count() - 1
     }
 
-    fn has_edge(&self, u: Self::Vertex, v: Self::Vertex) -> bool {
+    fn has_edge(&self, _u: Self::Vertex, _v: Self::Vertex) -> bool {
         todo!()
     }
 }

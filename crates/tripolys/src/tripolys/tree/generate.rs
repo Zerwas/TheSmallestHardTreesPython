@@ -4,16 +4,16 @@ use crate::tree::{is_core_tree, is_rooted_core_tree, Tree};
 use itertools::Itertools;
 use rayon::prelude::*;
 
-macro_rules! stat {
-    ($c:ident . $field:ident $($t:tt)*) => {
-        #[cfg(feature = "stats")]
-        {
-            if let Some(ref mut st) = $c.stats {
-                st . $field $($t)*;
-            }
-        }
-    }
-}
+// macro_rules! stat {
+//     ($c:ident . $field:ident $($t:tt)*) => {
+//         #[cfg(feature = "stats")]
+//         {
+//             if let Some(ref mut st) = $c.stats {
+//                 st . $field $($t)*;
+//             }
+//         }
+//     }
+// }
 
 pub struct Config {
     /// Number of vertices to start at

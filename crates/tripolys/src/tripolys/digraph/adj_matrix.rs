@@ -149,7 +149,7 @@ where
 impl Digraph<'_> for AdjMatrix {}
 
 impl<V> FromIterator<(V, V)> for AdjMatrix<V> {
-    fn from_iter<T: IntoIterator<Item = (V, V)>>(iter: T) -> AdjMatrix<V> {
+    fn from_iter<T: IntoIterator<Item = (V, V)>>(_iter: T) -> AdjMatrix<V> {
         todo!()
     }
 }

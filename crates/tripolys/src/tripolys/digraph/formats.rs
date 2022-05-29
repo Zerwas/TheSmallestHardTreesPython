@@ -1,6 +1,5 @@
 use std::error::Error;
 use std::io::{Read, Write};
-use std::str::FromStr;
 use std::{fmt, io, num};
 
 use itertools::Itertools;

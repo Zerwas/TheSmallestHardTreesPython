@@ -67,7 +67,7 @@ where
         todo!()
     }
 
-    fn has_edge(&self, u: Self::Vertex, v: Self::Vertex) -> bool {
+    fn has_edge(&self, _u: Self::Vertex, _v: Self::Vertex) -> bool {
         todo!()
     }
 }
