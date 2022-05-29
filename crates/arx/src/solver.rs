@@ -42,7 +42,7 @@ impl Trail {
 
 /// Configuration for backtracking
 #[derive(Clone, Debug)]
-pub struct BTConfig {
+pub struct SolveSettings {
     /// Sort the stack of variables after initial run of AC-3 (smallest domain first)
     pub sort_stack: bool,
     /// If true, stop at first solution
@@ -51,9 +51,9 @@ pub struct BTConfig {
     pub record_stats: bool,
 }
 
-impl Default for BTConfig {
-    fn default() -> BTConfig {
-        BTConfig {
+impl Default for SolveSettings {
+    fn default() -> SolveSettings {
+        SolveSettings {
             sort_stack: true,
             stop_at_first: false,
             record_stats: true,
@@ -108,7 +108,7 @@ pub struct BTSolver<'p, P: Problem> {
     neighbors: Vec<Vec<(Variable, Variable)>>,
     variables: Stack<Variable>,
     assignments: Stack<(Variable, usize)>,
-    config: BTConfig,
+    config: SolveSettings,
     stats: Option<BTStats>,
     trails: Stack<Trail>,
 }
@@ -116,11 +116,11 @@ pub struct BTSolver<'p, P: Problem> {
 impl<'p, P: Problem> BTSolver<'p, P> {
     /// Constructs a new `BTSolver<p', P>` from `problem`.
     pub fn new(problem: &'p P) -> BTSolver<P> {
-        BTSolver::with_config(problem, BTConfig::default())
+        BTSolver::with_config(problem, SolveSettings::default())
     }
 
     /// Constructs a new `BTSolver<p', P>` from `problem`.
-    pub fn with_config(problem: &'p P, config: BTConfig) -> BTSolver<P> {
+    pub fn with_config(problem: &'p P, config: SolveSettings) -> BTSolver<P> {
         let mut neighbors = vec![Vec::new(); problem.size()];
 
         for arc in problem.arcs() {
