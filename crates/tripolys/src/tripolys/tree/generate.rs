@@ -15,6 +15,7 @@ use rayon::prelude::*;
 //     }
 // }
 
+#[derive(Clone, Copy)]
 pub struct Config {
     /// Number of vertices to start at
     pub start: usize,
