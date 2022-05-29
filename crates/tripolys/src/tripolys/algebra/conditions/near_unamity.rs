@@ -84,7 +84,7 @@ fn nu_partition<G>(arity: usize, g: &G, weak: bool) -> Partition<Vec<G::Vertex>>
 where
     for<'a> G: Vertices<'a>,
 {
-    let mut ret = Vec::new();
+    let mut partition = Vec::new();
 
     for v in g.vertices() {
         let mut vec = Vec::new();
@@ -93,25 +93,25 @@ where
             if v == w {
                 continue;
             }
-            let mut set = Vec::new();
+            let mut eq_class = Vec::new();
 
             for k in 0..arity {
                 let mut tuple = vec![v; arity];
                 tuple[k] = w;
-                set.push(tuple);
+                eq_class.push(tuple);
             }
             if weak {
-                ret.push(set);
+                partition.push(eq_class);
             } else {
-                vec.push(set);
+                vec.push(eq_class);
             }
         }
         if !weak {
-            ret.push(vec.into_iter().flatten().collect_vec());
+            partition.push(vec.into_iter().flatten().collect_vec());
         }
     }
 
-    ret
+    partition
 }
 
 // impl HeightOne for Nu {
@@ -152,7 +152,7 @@ fn elem_count<T: Eq + Clone + Hash>(x: &[T]) -> ElemCount<T> {
     });
 
     match elem_freq.len() {
-        1 => ElemCount::AllEqual(elem_freq.keys().cloned().next().unwrap()),
+        1 => ElemCount::AllEqual(elem_freq.keys().next().cloned().unwrap()),
         2 => {
             let mut it = elem_freq.into_iter();
             let (e0, f0) = it.next().unwrap();

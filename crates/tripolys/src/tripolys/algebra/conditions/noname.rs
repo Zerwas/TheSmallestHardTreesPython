@@ -6,15 +6,11 @@ pub struct Noname(pub usize);
 
 impl Precolor for Noname {
     fn precolor<V: PartialEq + Copy>(&self, (f, v): &(usize, Vec<V>)) -> Option<V> {
-        if *f == 0 {
-            if v[1] == v[2] {
-                return Some(v[0]);
-            }
+        if *f == 0 && v[1] == v[2] {
+            return Some(v[0]);
         }
-        if *f == self.0 {
-            if v[0] == v[1] {
-                return Some(v[3]);
-            }
+        if *f == self.0 && v[0] == v[1] {
+            return Some(v[3]);
         }
         None
     }

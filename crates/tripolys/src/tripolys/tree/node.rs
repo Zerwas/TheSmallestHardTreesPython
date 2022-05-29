@@ -205,10 +205,10 @@ impl FromStr for Tree {
         let mut children_stack = Vec::<Vec<(Arc<Tree>, bool)>>::new();
         let mut dir_stack = Vec::new();
 
-        let mut chars = s.chars().tuple_windows();
+        let chars = s.chars().tuple_windows();
         let mut dir = false;
 
-        while let Some((c, d)) = chars.next() {
+        for (c, d) in chars {
             match (c, d) {
                 ('0', e) => {
                     dir = false;
@@ -254,7 +254,7 @@ impl FromStr for Tree {
         if let Some(v) = children_stack.pop() {
             Ok(Tree::from_iter(v))
         } else {
-            return Err(ParseTreeNodeError::InvalidCharacter('a'));
+            Err(ParseTreeNodeError::InvalidCharacter('a'))
         }
     }
 }

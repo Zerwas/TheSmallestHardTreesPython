@@ -29,7 +29,7 @@ impl Instance {
     {
         let domains = g
             .vertices()
-            .map(|v| c(v).map_or(Vec::from_iter(h.vertices()), |v| vec![v]))
+            .map(|v| c(v).map_or(h.vertices().collect(), |v| vec![v]))
             .collect();
 
         Instance { domains, g, h }
@@ -39,7 +39,7 @@ impl Instance {
     where
         FL: Fn(usize) -> Vec<usize>,
     {
-        let domains = g.vertices().map(|v| l(v)).collect();
+        let domains = g.vertices().map(l).collect();
 
         Instance { domains, g, h }
     }

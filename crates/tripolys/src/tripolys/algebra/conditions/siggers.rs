@@ -37,6 +37,7 @@ impl Operation for Siggers {
 }
 
 impl HeightOne for Siggers {
+    #[allow(clippy::many_single_char_names)]
     fn eq_under<T: PartialEq>(v: &[T], w: &[T]) -> bool {
         fn cmp1<T: PartialEq>(x: &[T], y: &[T]) -> bool {
             let a = x[0] == y[1] && x[0] == x[3];

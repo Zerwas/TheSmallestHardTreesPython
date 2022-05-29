@@ -96,8 +96,8 @@ fn parse_precoloring(s: &str) -> Result<HashMap<usize, usize>, ParsePrecoloringE
         .map(|l| {
             l.split_once(':').map(|(a, b)| {
                 a.parse::<usize>()
-                    .and_then(|u| b.parse::<usize>().and_then(|v| Ok((u, v))))
-                    .map_err(|e| ParseVertex(e))
+                    .and_then(|u| b.parse::<usize>().map(|v| (u, v)))
+                    .map_err(ParseVertex)
             })
         })
         .collect::<Option<Result<HashMap<_, _>, _>>>()

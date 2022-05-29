@@ -20,9 +20,7 @@ impl Condition for Jonsson {
         let mut partition = Vec::new();
 
         for x in g.vertices() {
-            let mut id = (0..(2 * self.0 + 1))
-                .map(|i| (i, vec![x, x, x]))
-                .collect_vec();
+            let mut id = (0..=(2 * self.0)).map(|i| (i, vec![x, x, x])).collect_vec();
 
             for y in g.vertices() {
                 if x == y {
@@ -32,7 +30,7 @@ impl Condition for Jonsson {
                     partition.push(vec![(2 * i, vec![x, y, y]), (2 * i + 1, vec![x, y, y])]);
                     partition.push(vec![(2 * i + 1, vec![x, x, y]), (2 * i + 2, vec![x, x, y])]);
                 }
-                for i in 0..(2 * self.0 + 1) {
+                for i in 0..=(2 * self.0) {
                     id.push((i, vec![x, y, x]));
                 }
                 partition.push(vec![(0, vec![x, x, x]), (0, vec![x, x, y])]);

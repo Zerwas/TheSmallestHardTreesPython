@@ -107,7 +107,7 @@ pub fn command(args: &ArgMatches) -> CmdResult {
 
         for tree in trees {
             to_edge_list(&tree, &mut writer)?;
-            writer.write("\n".as_bytes())?;
+            writer.write_all("\n".as_bytes())?;
         }
     }
 

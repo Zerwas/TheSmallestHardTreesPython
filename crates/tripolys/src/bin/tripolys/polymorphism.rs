@@ -133,7 +133,7 @@ pub fn command(args: &ArgMatches) -> CmdResult {
 
         graphs.into_par_iter().for_each(|item| {
             // TODO remove clone --------------------------v
-            let problem = create_meta_problem(item.clone(), condition, config).unwrap();
+            let problem = create_meta_problem(&item, condition, config).unwrap();
             let mut solver = BTSolver::new(&problem);
             let found = solver.solution_exists();
 
@@ -164,7 +164,7 @@ pub fn command(args: &ArgMatches) -> CmdResult {
     }
 
     let h: AdjMatrix = parse_graph(args.value_of("graph").unwrap())?;
-    let problem = create_meta_problem(h, condition, config)?;
+    let problem = create_meta_problem(&h, condition, config)?;
     let mut solver = BTSolver::new(&problem);
 
     println!("\n> Checking for polymorphism...");
@@ -193,7 +193,7 @@ impl std::fmt::Display for MPError {
 
 impl std::error::Error for MPError {}
 
-fn create_meta_problem(h: AdjMatrix, s: &str, config: Config) -> Result<MetaProblem, MPError> {
+fn create_meta_problem(h: &AdjMatrix, s: &str, config: Config) -> Result<MetaProblem, MPError> {
     match s {
         "majority" => Ok(MetaProblem::new(h, Majority, config)),
         "siggers" => Ok(MetaProblem::new(h, Siggers, config)),

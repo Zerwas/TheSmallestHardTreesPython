@@ -131,7 +131,7 @@ impl<'p, P: Problem> BTSolver<'p, P> {
             problem,
             domains: DomMap::new(problem),
             neighbors,
-            variables: Stack::from_iter((0..problem.size()).map(|x| Variable(x))),
+            variables: Stack::from_iter((0..problem.size()).map(Variable)),
             stats: if config.record_stats {
                 Some(BTStats::default())
             } else {

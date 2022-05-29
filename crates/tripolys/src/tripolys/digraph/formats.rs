@@ -86,12 +86,11 @@ where
 }
 
 pub fn from_edge_list<G: FromIterator<(usize, usize)>>(s: &str) -> G {
-    G::from_iter(
-        s.split(&['[', ']', ',', '(', ')', '"'])
-            .filter(|&x| !x.is_empty())
-            .tuples()
-            .map(|(u, v)| (u.parse::<usize>().unwrap(), v.parse::<usize>().unwrap())),
-    )
+    s.split(&['[', ']', ',', '(', ')', '"'])
+        .filter(|&x| !x.is_empty())
+        .tuples()
+        .map(|(u, v)| (u.parse::<usize>().unwrap(), v.parse::<usize>().unwrap()))
+        .collect()
 }
 
 impl std::fmt::Display for CsvError {

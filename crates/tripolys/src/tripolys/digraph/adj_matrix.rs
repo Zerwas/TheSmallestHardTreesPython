@@ -1,6 +1,6 @@
 use std::fmt;
-use std::iter::Iterator;
-use std::{iter::Cloned, slice::Iter};
+use std::iter::{Copied, Iterator};
+use std::slice::Iter;
 
 use bit_vec::BitVec;
 use num_iter::{range, Range};
@@ -116,9 +116,9 @@ where
 }
 
 #[derive(Clone)]
-pub struct EdgeIt<'a, V: Clone>(Cloned<Iter<'a, (V, V)>>);
+pub struct EdgeIt<'a, V: Copy>(Copied<Iter<'a, (V, V)>>);
 
-impl<V: Clone> Iterator for EdgeIt<'_, V> {
+impl<V: Copy> Iterator for EdgeIt<'_, V> {
     type Item = (V, V);
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -133,7 +133,7 @@ where
     type EdgeIter = EdgeIt<'a, V>;
 
     fn edges(&'a self) -> Self::EdgeIter {
-        let t = self.edges.iter().cloned();
+        let t = self.edges.iter().copied();
         EdgeIt(t)
     }
 

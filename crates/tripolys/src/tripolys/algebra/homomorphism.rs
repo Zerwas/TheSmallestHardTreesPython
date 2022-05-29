@@ -1,3 +1,4 @@
+#![allow(clippy::module_name_repetitions)]
 use crate::digraph::traits::{Edges, GraphType};
 
 /// A homomorphism from G to H is a mapping h: V(G) → V(H) such that
@@ -84,7 +85,7 @@ pub trait IterAlgebra<V: Clone>: Iterator<Item = (V, V)> {
 
         for _ in 0..n {
             let mut t_edges = Vec::<(Vec<V>, Vec<V>)>::new();
-            edges.into_iter().for_each(|(u, v)| {
+            for (u, v) in edges {
                 for (e0, e1) in self.clone() {
                     let mut u_t = u.clone(); // TODO shorten with extend_one when stable
                     let mut v_t = v.clone();
@@ -92,7 +93,7 @@ pub trait IterAlgebra<V: Clone>: Iterator<Item = (V, V)> {
                     v_t.push(e1);
                     t_edges.push((u_t, v_t));
                 }
-            });
+            }
             edges = t_edges;
         }
         Power(edges.into_iter())

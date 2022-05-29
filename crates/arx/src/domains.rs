@@ -117,7 +117,7 @@ impl Iterator for Vars {
     type Item = Variable;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.iter.next().map(|i| Variable(i))
+        self.iter.next().map(Variable)
     }
 }
 
@@ -137,7 +137,7 @@ impl<A: IntoIterator<Item = usize>> FromIterator<A> for DomMap {
     fn from_iter<T: IntoIterator<Item = A>>(iter: T) -> DomMap {
         let domains = iter
             .into_iter()
-            .map(|i| List::from_iter(i.into_iter().map(|v| Value(v))))
+            .map(|i| List::from_iter(i.into_iter().map(Value)))
             .collect::<Vec<_>>();
         DomMap { map: domains }
     }
@@ -250,7 +250,7 @@ mod list {
             0
         }
 
-        pub fn iter<'a>(&'a self) -> Iter<'a, T> {
+        pub fn iter(&self) -> Iter<'_, T> {
             Iter {
                 list: self,
                 index: 0,

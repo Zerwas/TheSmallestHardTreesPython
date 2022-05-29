@@ -23,6 +23,7 @@ impl Condition for HobbyMcKenzie {
         vec![3; 2 * self.0 + 3]
     }
 
+    #[allow(clippy::identity_op)]
     fn partition<G>(&self, g: &G) -> Partition<(usize, Vec<G::Vertex>)>
     where
         for<'a> G: Vertices<'a>,

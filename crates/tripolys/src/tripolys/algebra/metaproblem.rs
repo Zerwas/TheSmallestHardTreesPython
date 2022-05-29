@@ -16,9 +16,9 @@ use super::IterAlgebra;
 ///
 /// Default settings:
 ///
-/// - level_wise: `true`,
-/// - conservative: `false`,
-/// - idempotent: `false`,
+/// - `level_wise`: `true`,
+/// - `conservative`: `false`,
+/// - `idempotent`: `false`,
 #[derive(Clone, Copy, Debug)]
 pub struct Config {
     level_wise: bool,
@@ -26,26 +26,35 @@ pub struct Config {
     idempotent: bool,
 }
 
-impl Config {
-    pub fn new() -> Config {
+impl Default for Config {
+    fn default() -> Self {
         Config {
             level_wise: true,
             conservative: false,
             idempotent: false,
         }
     }
+}
 
-    pub fn level_wise(mut self, val: bool) -> Self {
+impl Config {
+    pub fn new() -> Config {
+        Config::default()
+    }
+
+    #[must_use]
+    pub const fn level_wise(mut self, val: bool) -> Self {
         self.level_wise = val;
         self
     }
 
-    pub fn conservative(mut self, val: bool) -> Self {
+    #[must_use]
+    pub const fn conservative(mut self, val: bool) -> Self {
         self.conservative = val;
         self
     }
 
-    pub fn idempotent(mut self, val: bool) -> Self {
+    #[must_use]
+    pub const fn idempotent(mut self, val: bool) -> Self {
         self.idempotent = val;
         self
     }
@@ -57,8 +66,8 @@ pub struct MetaProblem {
 }
 
 impl MetaProblem {
-    pub fn new<C: Condition>(h: AdjMatrix, condition: C, config: Config) -> MetaProblem {
-        let levels = levels(&h).unwrap_or_default(); // TODO calculate lazyily
+    pub fn new<C: Condition>(h: &AdjMatrix, condition: C, config: Config) -> MetaProblem {
+        let levels = levels(h).unwrap_or_default(); // TODO calculate lazyily
         let mut ind_map = condition
             .arities()
             .into_iter()
@@ -67,40 +76,39 @@ impl MetaProblem {
             .filter(|((_, u), _)| !config.level_wise || u.iter().map(|v| levels[*v]).all_equal())
             .collect::<AdjMap<_>>();
 
-        for set in condition.partition(&h) {
+        for set in condition.partition(h) {
             for i in 1..set.len() {
                 ind_map.contract_vertices(&set[0], &set[i]);
             }
         }
 
-        let mut ind_mat = AdjMatrix::with_capacities(ind_map.vertex_count(), ind_map.edge_count());
+        let mut ind_matrix =
+            AdjMatrix::with_capacities(ind_map.vertex_count(), ind_map.edge_count());
         let vertex_map = ind_map
             .vertices()
             .cloned()
-            .map(|v| (v, ind_mat.add_vertex()))
+            .map(|v| (v, ind_matrix.add_vertex()))
             .collect::<BiMap<_, _>>();
         for (u, v) in ind_map.edges() {
-            ind_mat.add_edge(
+            ind_matrix.add_edge(
                 *vertex_map.get_by_left(&u).unwrap(),
                 *vertex_map.get_by_left(&v).unwrap(),
             );
         }
-        let instance = Instance::with_lists(ind_mat, h.clone(), |v| {
+        let instance = Instance::with_lists(ind_matrix, h.clone(), |v| {
             let vec = vertex_map.get_by_right(&v).unwrap();
             if let Some(u) = condition.precolor(vec) {
                 vec![u]
-            } else {
-                if config.conservative {
-                    vec.1.iter().copied().collect()
-                } else if config.idempotent {
-                    if vec.1.iter().all_equal() {
-                        vec![vec.1[0]]
-                    } else {
-                        h.vertices().collect()
-                    }
+            } else if config.conservative {
+                vec.1.to_vec()
+            } else if config.idempotent {
+                if vec.1.iter().all_equal() {
+                    vec![vec.1[0]]
                 } else {
                     h.vertices().collect()
                 }
+            } else {
+                h.vertices().collect()
             }
         });
 
@@ -130,7 +138,7 @@ impl Domains for MetaProblem {
 
 impl Problem for MetaProblem {}
 
-/// IndicatorGraph<V> is a directed graph datastructure using an adjacency list
+/// `AdjMap`<V> is a directed graph datastructure using an adjacency list
 /// representation.
 ///
 /// For each vertex the `HashMap` contains an ordered pair, the adjacency

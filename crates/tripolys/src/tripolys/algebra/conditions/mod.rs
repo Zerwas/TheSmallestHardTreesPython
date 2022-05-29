@@ -42,11 +42,11 @@ impl<O: Operation + Precolor> Condition for O {
         vec![self.arity()]
     }
 
-    fn partition<G>(&self, vertices: &G) -> Partition<(usize, Vec<G::Vertex>)>
+    fn partition<G>(&self, _vertices: &G) -> Partition<(usize, Vec<G::Vertex>)>
     where
         for<'a> G: Vertices<'a>,
     {
-        self.partition(vertices)
+        self.partition(_vertices)
             .into_iter()
             .map(|v| v.into_iter().map(|t| (0, t)).collect())
             .collect()

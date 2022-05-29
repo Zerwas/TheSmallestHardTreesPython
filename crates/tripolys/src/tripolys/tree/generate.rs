@@ -68,12 +68,16 @@ impl TreeGenerator {
     }
 
     pub fn with_config(config: Config) -> TreeGenerator {
-        if config.triad && config.start < 4 {
-            panic!("There is no triad with {} nodes", config.start);
-        }
-        if config.start == 0 {
-            panic!("There is no tree with {} nodes", config.start);
-        }
+        assert!(
+            !(config.triad && config.start < 4),
+            "There is no triad with {} nodes",
+            config.start
+        );
+        assert!(
+            config.start != 0,
+            "There is no tree with {} nodes",
+            config.start
+        );
 
         TreeGenerator {
             rooted_trees: vec![vec![Arc::new(Tree::leaf())]],
@@ -85,11 +89,7 @@ impl TreeGenerator {
     /// Returns all unique sets of `n` rooted trees whose number of nodes sum
     /// up to `total`. The trees are sorted by their number of nodes in
     /// ascending order.
-    fn rooted_trees(
-        &self,
-        total: usize,
-        n: usize,
-    ) -> impl Iterator<Item = Vec<Arc<Tree>>> + '_ {
+    fn rooted_trees(&self, total: usize, n: usize) -> impl Iterator<Item = Vec<Arc<Tree>>> + '_ {
         addends(total, n)
             .into_iter()
             .flat_map(|vec| {
@@ -144,10 +144,7 @@ impl TreeGenerator {
 
         if self.config.triad {
             self.rooted_trees(self.nvertices - 1, 3)
-                .filter(|arms| {
-                    arms.iter()
-                        .all(|arm| arm.is_path())
-                })
+                .filter(|arms| arms.iter().all(|arm| arm.is_path()))
                 .flat_map(|arms| connect_by_vertex(&arms))
                 .filter(|tree| tree.is_triad())
                 .collect()
@@ -262,20 +259,18 @@ fn addends(sum: usize, n: usize) -> Vec<Vec<usize>> {
 }
 
 #[derive(Debug)]
-pub enum GenerateError {
-    /// The number of nodes is too small
-    TreeNumNodes(usize),
-    /// The number of nodes is too small
-    TriadNumNodes(usize),
+pub enum NumNodesError {
+    Tree(usize),
+    Triad(usize),
 }
 
-impl std::fmt::Display for GenerateError {
+impl std::fmt::Display for NumNodesError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
-            GenerateError::TreeNumNodes(n) => write!(f, "There is no tree with {} nodes", n),
-            GenerateError::TriadNumNodes(n) => write!(f, "There is no triad with {} nodes", n),
+            NumNodesError::Tree(n) => write!(f, "There is no tree with {} nodes", n),
+            NumNodesError::Triad(n) => write!(f, "There is no triad with {} nodes", n),
         }
     }
 }
 
-impl std::error::Error for GenerateError {}
+impl std::error::Error for NumNodesError {}
