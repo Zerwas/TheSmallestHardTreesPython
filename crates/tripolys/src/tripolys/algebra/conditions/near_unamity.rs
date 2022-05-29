@@ -16,11 +16,11 @@ impl Operation for Majority {
     where
         for<'a> G: Vertices<'a>,
     {
-        nu(3).partition(vertices)
+        near_unamity(3).partition(vertices)
     }
 }
 
-impl Operation for Wnu {
+impl Operation for WeakNearUnamity {
     fn arity(&self) -> Arity {
         self.arity
     }
@@ -33,7 +33,7 @@ impl Operation for Wnu {
     }
 }
 
-impl Operation for Nu {
+impl Operation for NearUnamity {
     fn arity(&self) -> Arity {
         self.arity
     }
@@ -66,15 +66,15 @@ impl Precolor for Majority {
 
 /// f(x,...,x,y) = f(x,...,x,y,x) = ... = f(y,x,...,x) = x
 #[derive(Clone, Copy, Debug)]
-pub struct Nu {
+pub struct NearUnamity {
     arity: usize,
 }
 
-pub fn nu(arity: usize) -> Nu {
-    Nu { arity }
+pub fn near_unamity(arity: usize) -> NearUnamity {
+    NearUnamity { arity }
 }
 
-impl Precolor for Nu {
+impl Precolor for NearUnamity {
     fn precolor<V: Copy + Eq + Hash>(&self, (_, v): &(usize, Vec<V>)) -> Option<V> {
         if let ElemCount::Once(x1, _) = elem_count(v) {
             Some(x1)
@@ -86,15 +86,15 @@ impl Precolor for Nu {
 
 /// f(x,...,x,y) = f(x,...,x,y,x) = ... = f(y,x,...,x)
 #[derive(Clone, Copy, Debug)]
-pub struct Wnu {
+pub struct WeakNearUnamity {
     arity: usize,
 }
 
-pub fn wnu(arity: usize) -> Wnu {
-    Wnu { arity }
+pub fn weak_near_unamity(arity: usize) -> WeakNearUnamity {
+    WeakNearUnamity { arity }
 }
 
-impl Precolor for Wnu {}
+impl Precolor for WeakNearUnamity {}
 
 fn nu_partition<G>(arity: usize, g: &G, weak: bool) -> Partition<Vec<G::Vertex>>
 where

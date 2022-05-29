@@ -8,7 +8,7 @@ pub struct Jonsson {
     length: usize,
 }
 
-pub fn jn(length: usize) -> Jonsson {
+pub fn jonsson(length: usize) -> Jonsson {
     Jonsson { length }
 }
 

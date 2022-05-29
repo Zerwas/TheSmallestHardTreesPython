@@ -2,15 +2,15 @@ use crate::digraph::traits::Vertices;
 
 use super::{Arity, Condition, Partition, Precolor};
 
-pub struct Noname {
+pub struct NoName {
     length: usize,
 }
 
-pub fn nn(length: usize) -> Noname {
-    Noname { length }
+pub fn no_name(length: usize) -> NoName {
+    NoName { length }
 }
 
-impl Precolor for Noname {
+impl Precolor for NoName {
     fn precolor<V: PartialEq + Copy>(&self, (f, v): &(usize, Vec<V>)) -> Option<V> {
         if *f == 0 && v[1] == v[2] {
             return Some(v[0]);
@@ -22,7 +22,7 @@ impl Precolor for Noname {
     }
 }
 
-impl Condition for Noname {
+impl Condition for NoName {
     fn arities(&self) -> Vec<Arity> {
         vec![4; self.length + 1]
     }

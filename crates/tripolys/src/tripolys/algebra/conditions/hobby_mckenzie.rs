@@ -8,7 +8,7 @@ pub struct HobbyMcKenzie {
     length: usize,
 }
 
-pub fn hmck(length: usize) -> HobbyMcKenzie {
+pub fn hobby_mckenzie(length: usize) -> HobbyMcKenzie {
     HobbyMcKenzie { length }
 }
 

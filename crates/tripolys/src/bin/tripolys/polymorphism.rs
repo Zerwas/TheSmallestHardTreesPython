@@ -208,19 +208,19 @@ fn create_meta_problem(h: &AdjMatrix, s: &str, config: Config) -> Result<MetaPro
     match s {
         "majority" => Ok(MetaProblem::new(h, majority(), config)),
         "siggers" => Ok(MetaProblem::new(h, siggers(), config)),
-        "kmm" => Ok(MetaProblem::new(h, kmm(), config)),
+        "kmm" => Ok(MetaProblem::new(h, kearnes_markov_mckenzie(), config)),
         _ => {
             if let Some((pr, su)) = s.split_once('-') {
                 if let Ok(pr) = pr.parse() {
                     match su {
-                        "wnu" => Ok(MetaProblem::new(h, wnu(pr), config)),
-                        "nu" => Ok(MetaProblem::new(h, nu(pr), config)),
+                        "wnu" => Ok(MetaProblem::new(h, weak_near_unamity(pr), config)),
+                        "nu" => Ok(MetaProblem::new(h, near_unamity(pr), config)),
                         // "sigma" => Ok(MetaProblem::new(h, Sigma(pr))),
-                        "j" => Ok(MetaProblem::new(h, jn(pr), config)),
-                        "hm" => Ok(MetaProblem::new(h, hm(pr), config)),
-                        "kk" => Ok(MetaProblem::new(h, kk(pr), config)),
-                        "hmck" => Ok(MetaProblem::new(h, hmck(pr), config)),
-                        "nn" => Ok(MetaProblem::new(h, nn(pr), config)),
+                        "j" => Ok(MetaProblem::new(h, jonsson(pr), config)),
+                        "hm" => Ok(MetaProblem::new(h, hageman_mitschke(pr), config)),
+                        "kk" => Ok(MetaProblem::new(h, kiss_kearnes(pr), config)),
+                        "hmck" => Ok(MetaProblem::new(h, hobby_mckenzie(pr), config)),
+                        "nn" => Ok(MetaProblem::new(h, no_name(pr), config)),
                         &_ => Err(MPError),
                     }
                 } else {

@@ -6,7 +6,7 @@ pub struct HagemanMitschke {
     length: usize,
 }
 
-pub fn hm(length: usize) -> HagemanMitschke {
+pub fn hageman_mitschke(length: usize) -> HagemanMitschke {
     HagemanMitschke { length }
 }
 

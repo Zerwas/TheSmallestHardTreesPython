@@ -8,7 +8,7 @@ pub struct KearnesKiss {
     length: usize,
 }
 
-pub fn kk(length: usize) -> KearnesKiss {
+pub fn kiss_kearnes(length: usize) -> KearnesKiss {
     KearnesKiss { length }
 }
 
