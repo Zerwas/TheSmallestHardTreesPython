@@ -1,6 +1,6 @@
 use crate::digraph::traits::Vertices;
 
-use super::{Arity, Linear, Partition, Precolor};
+use super::{Arity, Condition, Partition, Precolor};
 
 pub struct HagemanMitschke(pub usize);
 
@@ -20,7 +20,7 @@ impl Precolor for HagemanMitschke {
     }
 }
 
-impl Linear for HagemanMitschke {
+impl Condition for HagemanMitschke {
     fn arities(&self) -> Vec<Arity> {
         vec![3; self.0]
     }

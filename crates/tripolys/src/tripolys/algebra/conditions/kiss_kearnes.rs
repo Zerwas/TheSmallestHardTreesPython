@@ -2,13 +2,13 @@ use itertools::Itertools;
 
 use crate::digraph::traits::Vertices;
 
-use super::{Arity, Linear, Partition, Precolor};
+use super::{Arity, Condition, Partition, Precolor};
 
 pub struct KearnesKiss(pub usize);
 
 impl Precolor for KearnesKiss {}
 
-impl Linear for KearnesKiss {
+impl Condition for KearnesKiss {
     fn arities(&self) -> Vec<Arity> {
         vec![3; self.0 + 1]
     }

@@ -2,7 +2,7 @@
 pub mod generate;
 mod node;
 
-pub use node::TreeNode;
+pub use node::Tree;
 
 use arx::consistency::ac_3;
 use arx::domains::DomMap;

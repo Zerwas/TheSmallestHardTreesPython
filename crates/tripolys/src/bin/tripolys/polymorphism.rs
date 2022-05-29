@@ -13,7 +13,7 @@ use std::fmt::Display;
 use std::path::Path;
 
 use tripolys::algebra::MetaProblem;
-use tripolys::algebra::{conditions::*, Options};
+use tripolys::algebra::{conditions::*, Config};
 
 use crate::{parse_graph, CmdResult};
 
@@ -106,7 +106,7 @@ pub fn command(args: &ArgMatches) -> CmdResult {
     }
 
     let condition = args.value_of("condition").unwrap();
-    let config = Options::new()
+    let config = Config::new()
         .level_wise(args.is_present("level-wise"))
         .conservative(args.is_present("conservative"))
         .idempotent(args.is_present("idempotent"));
@@ -193,7 +193,7 @@ impl std::fmt::Display for MPError {
 
 impl std::error::Error for MPError {}
 
-fn create_meta_problem(h: AdjMatrix, s: &str, config: Options) -> Result<MetaProblem, MPError> {
+fn create_meta_problem(h: AdjMatrix, s: &str, config: Config) -> Result<MetaProblem, MPError> {
     match s {
         "majority" => Ok(MetaProblem::new(h, Majority, config)),
         "siggers" => Ok(MetaProblem::new(h, Siggers, config)),

@@ -11,17 +11,17 @@ use super::Rooted;
 
 /// A recursive tree data-structure
 #[derive(Clone, Debug, PartialOrd, PartialEq)]
-pub struct TreeNode {
+pub struct Tree {
     pub(crate) num_nodes: usize,
     pub(crate) height: usize,
     pub(crate) max_arity: usize,
-    children: Vec<(Arc<TreeNode>, bool)>,
+    children: Vec<(Arc<Tree>, bool)>,
 }
 
-impl TreeNode {
+impl Tree {
     /// Returns a tree with only one node, also referred to as 'leaf'.
-    pub const fn leaf() -> TreeNode {
-        TreeNode {
+    pub const fn leaf() -> Tree {
+        Tree {
             num_nodes: 1,
             height: 0,
             max_arity: 0,
@@ -93,16 +93,16 @@ impl TreeNode {
         root_found
     }
 
-    pub fn iter(&self) -> impl Iterator<Item = (Arc<TreeNode>, bool)> + '_ {
+    pub fn iter(&self) -> impl Iterator<Item = (Arc<Tree>, bool)> + '_ {
         self.children.iter().cloned()
     }
 }
 
-impl GraphType for TreeNode {
+impl GraphType for Tree {
     type Vertex = usize;
 }
 
-impl Vertices<'_> for TreeNode {
+impl Vertices<'_> for Tree {
     type VertexIter = Range<usize>;
 
     fn vertices(&self) -> Self::VertexIter {
@@ -118,8 +118,8 @@ impl Vertices<'_> for TreeNode {
     }
 }
 
-fn edges(tree: &TreeNode) -> Vec<(usize, usize)> {
-    fn inner(id: &mut usize, tree: &TreeNode, edges: &mut Vec<(usize, usize)>) {
+fn edges(tree: &Tree) -> Vec<(usize, usize)> {
+    fn inner(id: &mut usize, tree: &Tree, edges: &mut Vec<(usize, usize)>) {
         let id_parent = *id;
 
         for (child, dir) in &tree.children {
@@ -151,7 +151,7 @@ impl Iterator for EdgeIter {
     }
 }
 
-impl<'a> Edges<'a> for TreeNode {
+impl<'a> Edges<'a> for Tree {
     type EdgeIter = EdgeIter;
 
     fn edges(&'a self) -> Self::EdgeIter {
@@ -167,16 +167,16 @@ impl<'a> Edges<'a> for TreeNode {
     }
 }
 
-impl Digraph<'_> for TreeNode {}
+impl Digraph<'_> for Tree {}
 
-impl Rooted<'_> for TreeNode {
+impl Rooted<'_> for Tree {
     fn root(&self) -> Self::Vertex {
         0
     }
 }
 
-impl FromIterator<(Arc<TreeNode>, bool)> for TreeNode {
-    fn from_iter<T: IntoIterator<Item = (Arc<TreeNode>, bool)>>(iter: T) -> TreeNode {
+impl FromIterator<(Arc<Tree>, bool)> for Tree {
+    fn from_iter<T: IntoIterator<Item = (Arc<Tree>, bool)>>(iter: T) -> Tree {
         let mut num_nodes = 1;
         let mut height = 0;
         let mut max_arity = 0;
@@ -189,7 +189,7 @@ impl FromIterator<(Arc<TreeNode>, bool)> for TreeNode {
             children.push((child, dir));
         }
 
-        TreeNode {
+        Tree {
             num_nodes,
             height: height + 1,
             max_arity: max(max_arity, children.len()),
@@ -198,11 +198,11 @@ impl FromIterator<(Arc<TreeNode>, bool)> for TreeNode {
     }
 }
 
-impl FromStr for TreeNode {
+impl FromStr for Tree {
     type Err = ParseTreeNodeError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let mut children_stack = Vec::<Vec<(Arc<TreeNode>, bool)>>::new();
+        let mut children_stack = Vec::<Vec<(Arc<Tree>, bool)>>::new();
         let mut dir_stack = Vec::new();
 
         let mut chars = s.chars().tuple_windows();
@@ -217,7 +217,7 @@ impl FromStr for TreeNode {
                             children_stack
                                 .last_mut()
                                 .unwrap()
-                                .push((Arc::new(TreeNode::leaf()), dir));
+                                .push((Arc::new(Tree::leaf()), dir));
                         }
                         _ => {}
                     }
@@ -229,7 +229,7 @@ impl FromStr for TreeNode {
                             children_stack
                                 .last_mut()
                                 .unwrap()
-                                .push((Arc::new(TreeNode::leaf()), dir));
+                                .push((Arc::new(Tree::leaf()), dir));
                         }
                         _ => {}
                     }
@@ -244,7 +244,7 @@ impl FromStr for TreeNode {
                     children_stack
                         .last_mut()
                         .unwrap()
-                        .push((Arc::new(TreeNode::from_iter(children)), dir));
+                        .push((Arc::new(Tree::from_iter(children)), dir));
                 }
                 (e, _) => {
                     return Err(ParseTreeNodeError::InvalidCharacter(e));
@@ -252,7 +252,7 @@ impl FromStr for TreeNode {
             }
         }
         if let Some(v) = children_stack.pop() {
-            Ok(TreeNode::from_iter(v))
+            Ok(Tree::from_iter(v))
         } else {
             return Err(ParseTreeNodeError::InvalidCharacter('a'));
         }
@@ -281,7 +281,7 @@ impl std::error::Error for ParseTreeNodeError {
     }
 }
 
-impl std::fmt::Display for TreeNode {
+impl std::fmt::Display for Tree {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let mut s = String::new();
 

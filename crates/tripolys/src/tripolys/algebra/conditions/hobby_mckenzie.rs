@@ -2,7 +2,7 @@ use itertools::Itertools;
 
 use crate::digraph::traits::Vertices;
 
-use super::{Arity, Linear, Partition, Precolor};
+use super::{Arity, Condition, Partition, Precolor};
 
 pub struct HobbyMcKenzie(pub usize);
 
@@ -18,7 +18,7 @@ impl Precolor for HobbyMcKenzie {
     }
 }
 
-impl Linear for HobbyMcKenzie {
+impl Condition for HobbyMcKenzie {
     fn arities(&self) -> Vec<Arity> {
         vec![3; 2 * self.0 + 3]
     }

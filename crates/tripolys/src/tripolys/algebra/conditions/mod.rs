@@ -1,6 +1,5 @@
 //! Identities that are satisfied by polymorphisms.
 
-// mod custom;
 mod hageman_mitschke;
 mod hobby_mckenzie;
 mod jonsson;
@@ -38,7 +37,7 @@ pub trait Operation {
         for<'a> G: Vertices<'a>;
 }
 
-impl<O: Operation + Precolor> Linear for O {
+impl<O: Operation + Precolor> Condition for O {
     fn arities(&self) -> Vec<Arity> {
         vec![self.arity()]
     }
@@ -62,7 +61,7 @@ pub trait Precolor {
     }
 }
 
-pub trait Linear: Precolor {
+pub trait Condition: Precolor {
     /// The arity for each operation symbol
     fn arities(&self) -> Vec<Arity>;
 
@@ -84,7 +83,7 @@ mod tests {
 
     #[test]
     fn test_height1() {
-        fn test<C: Linear + HeightOne>(_condition: C) {
+        fn test<C: Condition + HeightOne>(_condition: C) {
             // for set in condition.partition(&[0, 1, 2]) {
             //     assert!(set.windows(2).all(|w| condition.eq_under(&w[0], &w[1])));
             // }

@@ -9,7 +9,7 @@ use crate::digraph::traits::{Edges, Vertices};
 use crate::digraph::{levels, AdjMatrix};
 use crate::hcoloring::Instance;
 
-use super::conditions::Linear;
+use super::conditions::Condition;
 use super::IterAlgebra;
 
 /// Conditions a polymorphism must satisfy.
@@ -20,15 +20,15 @@ use super::IterAlgebra;
 /// - conservative: `false`,
 /// - idempotent: `false`,
 #[derive(Clone, Copy, Debug)]
-pub struct Options {
+pub struct Config {
     level_wise: bool,
     conservative: bool,
     idempotent: bool,
 }
 
-impl Options {
-    pub fn new() -> Options {
-        Options {
+impl Config {
+    pub fn new() -> Config {
+        Config {
             level_wise: true,
             conservative: false,
             idempotent: false,
@@ -57,14 +57,14 @@ pub struct MetaProblem {
 }
 
 impl MetaProblem {
-    pub fn new<C: Linear>(h: AdjMatrix, condition: C, options: Options) -> MetaProblem {
+    pub fn new<C: Condition>(h: AdjMatrix, condition: C, config: Config) -> MetaProblem {
         let levels = levels(&h).unwrap_or_default(); // TODO calculate lazyily
         let mut ind_map = condition
             .arities()
             .into_iter()
             .enumerate()
             .flat_map(|(i, k)| h.edges().power(k).map(move |(u, v)| ((i, u), (i, v))))
-            .filter(|((_, u), _)| !options.level_wise || u.iter().map(|v| levels[*v]).all_equal())
+            .filter(|((_, u), _)| !config.level_wise || u.iter().map(|v| levels[*v]).all_equal())
             .collect::<AdjMap<_>>();
 
         for set in condition.partition(&h) {
@@ -90,9 +90,9 @@ impl MetaProblem {
             if let Some(u) = condition.precolor(vec) {
                 vec![u]
             } else {
-                if options.conservative {
+                if config.conservative {
                     vec.1.iter().copied().collect()
-                } else if options.idempotent {
+                } else if config.idempotent {
                     if vec.1.iter().all_equal() {
                         vec![vec.1[0]]
                     } else {
@@ -152,7 +152,7 @@ impl<T> AdjMap<T> {
         }
     }
 
-    pub fn with_capacity(nvertices: usize, nedges: usize) -> AdjMap<T> {
+    pub fn with_capacities(nvertices: usize, nedges: usize) -> AdjMap<T> {
         AdjMap {
             lists: IndexMap::with_capacity(nvertices),
             edges: IndexSet::with_capacity(nedges),
@@ -495,21 +495,21 @@ impl<V: Clone + Hash + Eq> FromIterator<(V, V)> for AdjMap<V> {
     }
 }
 
-// impl<V: std::fmt::Display> std::fmt::Display for AdjMap<V> {
-//     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-//         let mut s = String::from("[");
+impl<V: std::fmt::Display + Hash + Eq + Clone> std::fmt::Display for AdjMap<V> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        let mut s = String::from("[");
 
-//         for (i, (u, v)) in self.edges().enumerate() {
-//             if i != 0 {
-//                 s.push(',');
-//             }
-//             s.push_str(&format!("({:?},{:?})", u, v));
-//         }
-//         s.push(']');
+        for (i, (u, v)) in self.edges().enumerate() {
+            if i != 0 {
+                s.push(',');
+            }
+            s.push_str(&format!("({},{})", u, v));
+        }
+        s.push(']');
 
-//         write!(f, "{}", s)
-//     }
-// }
+        write!(f, "{}", s)
+    }
+}
 
 pub struct VertexIter<'a, T>(pub(crate) Box<dyn 'a + Iterator<Item = &'a T>>);
 

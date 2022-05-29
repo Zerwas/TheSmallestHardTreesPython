@@ -1,6 +1,6 @@
 use crate::digraph::traits::Vertices;
 
-use super::{Arity, Linear, Partition, Precolor};
+use super::{Arity, Condition, Partition, Precolor};
 
 pub struct Noname(pub usize);
 
@@ -20,7 +20,7 @@ impl Precolor for Noname {
     }
 }
 
-impl Linear for Noname {
+impl Condition for Noname {
     fn arities(&self) -> Vec<Arity> {
         vec![4; self.0 + 1]
     }

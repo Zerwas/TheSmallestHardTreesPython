@@ -6,4 +6,4 @@ mod metaproblem;
 
 pub use homomorphism::*;
 pub use metaproblem::MetaProblem;
-pub use metaproblem::Options;
+pub use metaproblem::Config;

@@ -1,13 +1,13 @@
 use crate::digraph::traits::Vertices;
 
-use super::{Arity, Linear, Partition, Precolor};
+use super::{Arity, Condition, Partition, Precolor};
 
 /// p(x,y,y) = q(y,x,x) = q(x,x,y), p(x,y,x) = q(x,y,x)
 pub struct Kmm;
 
 impl Precolor for Kmm {}
 
-impl Linear for Kmm {
+impl Condition for Kmm {
     fn arities(&self) -> Vec<Arity> {
         vec![3, 3]
     }

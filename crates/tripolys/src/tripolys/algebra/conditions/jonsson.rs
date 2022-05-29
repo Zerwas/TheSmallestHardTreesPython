@@ -2,13 +2,13 @@ use itertools::Itertools;
 
 use crate::digraph::traits::Vertices;
 
-use super::{Arity, Linear, Partition, Precolor};
+use super::{Arity, Condition, Partition, Precolor};
 
 pub struct Jonsson(pub usize);
 
 impl Precolor for Jonsson {}
 
-impl Linear for Jonsson {
+impl Condition for Jonsson {
     fn arities(&self) -> Vec<Arity> {
         vec![3; 2 * self.0 + 1]
     }

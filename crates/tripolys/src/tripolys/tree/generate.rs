@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::tree::{is_core_tree, is_rooted_core_tree, TreeNode};
+use crate::tree::{is_core_tree, is_rooted_core_tree, Tree};
 use itertools::Itertools;
 use rayon::prelude::*;
 
@@ -57,7 +57,7 @@ impl Default for Config {
 }
 
 pub struct TreeGenerator {
-    rooted_trees: Vec<Vec<Arc<TreeNode>>>,
+    rooted_trees: Vec<Vec<Arc<Tree>>>,
     config: Config,
     nvertices: usize,
 }
@@ -76,7 +76,7 @@ impl TreeGenerator {
         }
 
         TreeGenerator {
-            rooted_trees: vec![vec![Arc::new(TreeNode::leaf())]],
+            rooted_trees: vec![vec![Arc::new(Tree::leaf())]],
             nvertices: config.start,
             config,
         }
@@ -89,7 +89,7 @@ impl TreeGenerator {
         &self,
         total: usize,
         n: usize,
-    ) -> impl Iterator<Item = Vec<Arc<TreeNode>>> + '_ {
+    ) -> impl Iterator<Item = Vec<Arc<Tree>>> + '_ {
         addends(total, n)
             .into_iter()
             .flat_map(|vec| {
@@ -102,7 +102,7 @@ impl TreeGenerator {
 
     fn generate_rooted_trees(&mut self) {
         for step in self.rooted_trees.len() + 1..self.nvertices {
-            let mut trees = Vec::<Vec<Arc<TreeNode>>>::new();
+            let mut trees = Vec::<Vec<Arc<Tree>>>::new();
             // let mut rcc_time = time::OffsetDateTime::now_utc();
             let mut num_rcc = 0;
 
@@ -139,7 +139,7 @@ impl TreeGenerator {
         }
     }
 
-    fn generate_trees(&mut self) -> Vec<TreeNode> {
+    fn generate_trees(&mut self) -> Vec<Tree> {
         self.generate_rooted_trees();
 
         if self.config.triad {
@@ -172,16 +172,16 @@ impl TreeGenerator {
         }
     }
 
-    pub fn next(&mut self) -> Vec<TreeNode> {
+    pub fn next(&mut self) -> Vec<Tree> {
         if self.nvertices == 1 {
-            return vec![TreeNode::leaf()];
+            return vec![Tree::leaf()];
         }
 
         let trees = self.generate_trees();
 
         let num_cc = trees.len();
         // let mut cc_time = Duration::from_secs(0);
-        let filter = |t: &TreeNode| {
+        let filter = |t: &Tree| {
             // let start = Instant::now();
             let p = is_core_tree(t);
             // cc_time += start.elapsed();
@@ -205,7 +205,7 @@ impl TreeGenerator {
 /// `child` becomes the rightmost child of `tree`.
 ///
 /// If the two trees happen to be the same, we only add an edge once.
-fn connect_by_edge(tree: &Arc<TreeNode>, child: &Arc<TreeNode>) -> Vec<TreeNode> {
+fn connect_by_edge(tree: &Arc<Tree>, child: &Arc<Tree>) -> Vec<Tree> {
     let connect = |dir| {
         tree.iter()
             .chain(std::iter::once((child.clone(), dir)))
@@ -221,7 +221,7 @@ fn connect_by_edge(tree: &Arc<TreeNode>, child: &Arc<TreeNode>) -> Vec<TreeNode>
 
 /// Connects an arbitrary number of rooted trees by adding a new vertex that is
 /// adjacent to each of their roots.
-fn connect_by_vertex(children: &[Arc<TreeNode>]) -> Vec<TreeNode> {
+fn connect_by_vertex(children: &[Arc<Tree>]) -> Vec<Tree> {
     (0..children.len())
         .map(|_| [true, false].into_iter())
         .multi_cartesian_product()
