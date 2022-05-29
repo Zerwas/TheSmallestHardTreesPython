@@ -79,9 +79,9 @@ To reproduce the result, run the following sequence of commands:
 
 ```
 cd data/20
-tripolys polymorphism -i cores.edges -o no_2wnu.csv -c 2-wnu -f deny
-tripolys polymorphism -i no_2wnu.csv -o no_3wnu.csv -c 3-wnu -f deny
-tripolys polymorphism -i no_3wnu.csv -o no_kmm.csv -c kmm -f deny
+tripolys polymorphism -i cores.edges -o 2wnu_deny.csv -c 2-wnu -f deny
+tripolys polymorphism -i 2wnu_deny.csv -o 3wnu_deny.csv -c 3-wnu -f deny
+tripolys polymorphism -i 3wnu_deny.csv -o kmm_deny.csv -c kmm -f deny
 ```
 
 We also found the smallest NP-hard triads: (TODO link edge lists here?)
@@ -92,8 +92,8 @@ tripolys generate -s 4 -e 22 --core --triad
 ```
 
 ```
-tripolys polymorphism --graph 10110000,0101111,100111 -c kmm
-tripolys polymorphism --graph 10110000,1001111,010111 -c kmm
+tripolys polymorphism -g 10110000,0101111,100111 -c kmm
+tripolys polymorphism -g 10110000,1001111,010111 -c kmm
 ```
 
 
