@@ -69,7 +69,7 @@ pub(crate) enum BTError {
 
 /// Statistics from the execution of the backtracking search.
 #[derive(Clone, Debug, Default)]
-pub struct BTStats {
+pub struct SolveStats {
     /// Number of consistency checks
     pub ccks: u32,
     /// Number of backtracks from dead ends
@@ -80,16 +80,6 @@ pub struct BTStats {
     pub ac3_time: Duration,
     /// Duration of the entire solving process
     pub mac3_time: Duration,
-}
-
-impl BTStats {
-    pub fn print(&self) {
-        println!("{: <12} {}", "#ccks:", self.ccks);
-        println!("{: <12} {}", "#backtracks:", self.backtracks);
-        println!("{: <12} {}", "#solutions:", self.solutions);
-        println!("{: <12} {:?}s", "ac3_time", self.ac3_time.as_seconds_f32());
-        println!("{: <12} {:?}s", "mac3_time:", self.mac3_time.as_seconds_f32());
-    }
 }
 
 macro_rules! stat {
@@ -109,7 +99,7 @@ pub struct BTSolver<'p, P: Problem> {
     variables: Stack<Variable>,
     assignments: Stack<(Variable, usize)>,
     config: SolveSettings,
-    stats: Option<BTStats>,
+    stats: Option<SolveStats>,
     trails: Stack<Trail>,
 }
 
@@ -133,7 +123,7 @@ impl<'p, P: Problem> BTSolver<'p, P> {
             neighbors,
             variables: Stack::from_iter((0..problem.size()).map(Variable)),
             stats: if config.record_stats {
-                Some(BTStats::default())
+                Some(SolveStats::default())
             } else {
                 None
             },
@@ -143,7 +133,7 @@ impl<'p, P: Problem> BTSolver<'p, P> {
         }
     }
 
-    pub fn stats(&self) -> Option<&BTStats> {
+    pub fn stats(&self) -> Option<&SolveStats> {
         self.stats.as_ref()
     }
 
@@ -319,7 +309,7 @@ impl<'p, P: Problem> BTSolver<'p, P> {
                     self.assign(x, i);
 
                     if self.mac3(self.neighbors[*x].clone()) {
-                        trace!("  - Propagation successful, recursing...");
+                        trace!("  - Propagation successful...");
                         depth += 1;
                     } else {
                         trace!("  - Detected inconsistency, backtracking...");

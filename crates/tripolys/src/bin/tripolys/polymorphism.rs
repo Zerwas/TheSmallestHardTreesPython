@@ -1,5 +1,5 @@
-use arx::solver::{BTSolver, BTStats};
-use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
+use arx::solver::{BTSolver, SolveStats};
+use clap::{App, AppSettings, Arg, ArgGroup, ArgMatches, SubCommand};
 use colored::*;
 use csv::WriterBuilder;
 use rayon::prelude::*;
@@ -94,6 +94,10 @@ pub fn cli() -> App<'static, 'static> {
                 .possible_values(&["deny", "admit"])
                 .help("Filter graphs which deny/admit a polymorphism"),
         )
+        .group(
+            ArgGroup::with_name("variant")
+                .args(&["input", "graph"])
+        )
 }
 
 pub fn command(args: &ArgMatches) -> CmdResult {
@@ -176,7 +180,14 @@ pub fn command(args: &ArgMatches) -> CmdResult {
     };
 
     if let Some(stats) = solver.stats() {
-        stats.print();
+        println!("{: <12} {}", "#ccks:", stats.ccks);
+        println!("{: <12} {}", "#backtracks:", stats.backtracks);
+        println!("{: <12} {:?}s", "ac3_time", stats.ac3_time.as_seconds_f32());
+        println!(
+            "{: <12} {:?}s",
+            "mac3_time:",
+            stats.mac3_time.as_seconds_f32()
+        );
     }
 
     Ok(())
@@ -251,7 +262,7 @@ struct Record {
 }
 
 impl Record {
-    fn new(tree: impl Display, found: bool, stats: &BTStats) -> Record {
+    fn new(tree: impl Display, found: bool, stats: &SolveStats) -> Record {
         Record {
             tree: tree.to_string(),
             found,
@@ -294,7 +305,7 @@ impl SearchLog {
         SearchLog::default()
     }
 
-    pub fn add(&mut self, graph: impl Display, found: bool, stats: &BTStats) {
+    pub fn add(&mut self, graph: impl Display, found: bool, stats: &SolveStats) {
         self.0.push(Record::new(graph, found, stats));
     }
 
