@@ -18,7 +18,15 @@ use tripolys::algebra::{conditions::*, Config};
 use crate::{parse_graph, CmdResult};
 
 const AVAILABLE_CONDITIONS: [&str; 9] = [
-    "majority", "siggers", "kkm", "k-wnu", "k-nu", "n-j", "n-hm", "n-kk", "n-hmck",
+    "majority    majority",
+    "k-nu        k-ary near-unamity",
+    "k-wnu       k-ary weak near-unamity",
+    "kmm         Kearnes-Marković-McKenzie",
+    "n-j         Jónsson chain of length n",
+    "n-kk        Kearnes-Kiss chain of length n",
+    "n-hmck      HobbyMcKenzie chain of length n",
+    "n-hm        Hagemann-Mitschke chain of length n",
+    "siggers     Siggers (consider testing for kmm, since it is faster)",
 ];
 
 pub fn cli() -> App<'static, 'static> {
