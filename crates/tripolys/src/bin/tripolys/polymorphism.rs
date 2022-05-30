@@ -130,14 +130,12 @@ pub fn command(args: &ArgMatches) -> CmdResult {
             let _ = lines.next();
         }
         for line in lines {
-            if let Some(s) = line.split(',').next() {
-                graphs.push(from_edge_list(s));
-            }
+            graphs.push(from_edge_list(line));
         }
 
         let log = std::sync::Mutex::new(SearchLog::new());
 
-        println!("  > Checking for polymorphism...",);
+        println!("  > Checking for polymorphisms...",);
         let start = std::time::Instant::now();
 
         graphs.into_par_iter().for_each(|item| {
@@ -145,7 +143,7 @@ pub fn command(args: &ArgMatches) -> CmdResult {
             let mut solver = BTSolver::new(&problem);
             let found = solver.solution_exists();
 
-            if filter.map_or(true, |v| v ^ found) {
+            if filter.map_or(true, |v| !(v ^ found)) {
                 log.lock()
                     .unwrap()
                     .add(item, found, solver.stats().unwrap());
@@ -163,7 +161,7 @@ pub fn command(args: &ArgMatches) -> CmdResult {
     let problem = create_meta_problem(&h, condition, config)?;
     let mut solver = BTSolver::new(&problem);
 
-    println!("\n> Checking for polymorphism...");
+    println!("\n> Checking for polymorphisms...");
 
     if solver.solution_exists() {
         println!("{}", "  ✓ Exists\n".to_string().green());

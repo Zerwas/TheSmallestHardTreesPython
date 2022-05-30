@@ -61,7 +61,7 @@ where
 /// Reads a graph from csv format.
 pub fn from_csv<G, R>(mut read: R) -> Result<G, CsvError>
 where
-    G: Buildable<Vertex = usize>,
+    G: Buildable<Vertex = usize> + fmt::Debug,
     R: Read,
 {
     let mut content = String::new();
@@ -77,6 +77,9 @@ where
     }
 
     let mut g = G::with_capacities(edges.len() * 2, edges.len());
+    for _ in 0..=edges.len() {
+        g.add_vertex();
+    }
     for (u, v) in edges {
         g.add_edge(u, v);
     }

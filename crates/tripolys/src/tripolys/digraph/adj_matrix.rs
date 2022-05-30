@@ -17,6 +17,14 @@ pub struct AdjMatrix<V = usize> {
 }
 
 impl AdjMatrix {
+    pub fn new() -> AdjMatrix {
+        AdjMatrix {
+            num_vertices: 0,
+            adj: BitVec::default(),
+            edges: Vec::new(),
+        }
+    }
+
     pub fn build_from<'a, G>(g: &'a G) -> AdjMatrix<G::Vertex>
     where
         G: Digraph<'a>,
@@ -52,20 +60,10 @@ impl<V: PrimInt + Unsigned> Buildable for AdjMatrix<V> {
     }
 
     fn add_edge(&mut self, u: V, v: V) {
-        let u_id = u.to_usize().unwrap();
-        let v_id = v.to_usize().unwrap();
-        if u_id >= self.num_vertices {
-            for _ in self.num_vertices..=u_id {
-                self.add_vertex();
-            }
-        }
-        if v_id >= self.num_vertices {
-            for _ in self.num_vertices..=v_id {
-                self.add_vertex();
-            }
-        }
-        let edge_id = u_id * self.vertex_count() + v_id;
-        self.adj.set(edge_id, true);
+        let u_t = u.to_usize().unwrap();
+        let v_t = v.to_usize().unwrap();
+        let edge_idx = u_t * self.vertex_count() + v_t;
+        self.adj.set(edge_idx, true);
         self.edges.push((u, v));
     }
 
@@ -133,8 +131,7 @@ where
     type EdgeIter = EdgeIt<'a, V>;
 
     fn edges(&'a self) -> Self::EdgeIter {
-        let t = self.edges.iter().copied();
-        EdgeIt(t)
+        EdgeIt(self.edges.iter().copied())
     }
 
     fn edge_count(&self) -> usize {
@@ -148,9 +145,17 @@ where
 
 impl Digraph<'_> for AdjMatrix {}
 
-impl<V> FromIterator<(V, V)> for AdjMatrix<V> {
-    fn from_iter<T: IntoIterator<Item = (V, V)>>(_iter: T) -> AdjMatrix<V> {
-        todo!()
+impl FromIterator<(usize, usize)> for AdjMatrix {
+    fn from_iter<T: IntoIterator<Item = (usize, usize)>>(iter: T) -> AdjMatrix {
+        let edges = Vec::from_iter(iter);
+        let mut g = AdjMatrix::new();
+        for _ in 0..=edges.len() {
+            g.add_vertex();
+        }
+        for (u, v) in edges {
+            g.add_edge(u, v);
+        }
+        g
     }
 }
 
@@ -160,6 +165,7 @@ impl fmt::Display for AdjMatrix {
         for (u, v) in self.edges() {
             s.push_str(&format!("({},{})", u, v));
         }
-        write!(f, "")
+        s.push(']');
+        write!(f, "{}", s)
     }
 }
