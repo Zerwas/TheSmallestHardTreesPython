@@ -14,13 +14,13 @@ https://doi.org/10.48550/arXiv.2205.07528
  
 ```
 @misc{https://doi.org/10.48550/arxiv.2205.07528,
-  doi = {10.48550/ARXIV.2205.07528},  
-  url = {https://arxiv.org/abs/2205.07528},  
+  doi = {10.48550/ARXIV.2205.07528},
+  url = {https://arxiv.org/abs/2205.07528},
   author = {Bodirsky, Manuel and Bulín, Jakub and Starke, Florian and Wernthaler, Michael},  
   keywords = {Rings and Algebras (math.RA), FOS: Mathematics, FOS: Mathematics, G.2.2, 08A70, 08B05},  
-  title = {The Smallest Hard Trees},  
-  publisher = {arXiv},  
-  year = {2022},  
+  title = {The Smallest Hard Trees},
+  publisher = {arXiv},
+  year = {2022},
   copyright = {Creative Commons Attribution Non Commercial Share Alike 4.0 International}
 }
 ```
@@ -110,7 +110,7 @@ and this is how you can test them:
 
 ```
 cd data/16
-tripolys polymorphism -i cores.edges -o no_majority.csv -c majority -f deny
+tripolys polymorphism -i cores.edges -o majority_deny.csv -c majority -f deny
 ```
 (TODO how to run the tests for KK, HMcK, J?)
 
@@ -125,7 +125,7 @@ Use `--help`
 tripolys polymorphism -g 1011000,1001111,010111 -c kmm -I
 ```
 ```
-tripolys polymorphism -g graph -c 3-wnu -I
+tripolys polymorphism -g k3 -c 3-wnu -I
 ```
 ```
 tripolys homomorphism -f graph -t t3
