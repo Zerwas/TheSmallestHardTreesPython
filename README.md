@@ -74,18 +74,18 @@ The numbers of such trees are given in Table 2 in Section 7.
 
 ### The smallest NP-hard trees (Section 7.1.1) 
 
-The trees can be found [here](file:data/20/no_kmm.csv ). (TODO put the data there)
+The trees can be found [here](file:data/20/kmm_deny.csv ). (TODO put the data there)
 To reproduce the result, run the following sequence of commands:
 
 ```
 cd data/20
-tripolys polymorphism -i cores.edges -o 2wnu_deny.csv -c 2-wnu -f deny
-tripolys polymorphism -i 2wnu_deny.csv -o 3wnu_deny.csv -c 3-wnu -f deny
-tripolys polymorphism -i 3wnu_deny.csv -o kmm_deny.csv -c kmm -f deny
+tripolys polymorphism -i cores.edges -o 2-wnu_deny.csv -c 2-wnu -f deny
+tripolys polymorphism -i 2-wnu_deny.csv -o 3-wnu_deny.csv -c 3-wnu -f deny
+tripolys polymorphism -i 3-wnu_deny.csv -o kmm_deny.csv -c kmm -f deny
 ```
 
 We also found the smallest NP-hard triads: (TODO link edge lists here?)
-The triads can be found [here](file:data/20/triads/no_kmm.csv ).
+The triads can be found [here](file:data/20/triads/kmm_deny.csv ).
 
 ```
 tripolys generate -s 4 -e 22 --core --triad
@@ -112,7 +112,7 @@ TODO
 ### A tree not known to be in NL (Section 7.2.1)
 
 The trees not known to be in NL are
-[here](https://gitlab.com/WhatDothLife/tripolys_data/-/blob/master/16/no_majority.csv)
+[here](https://gitlab.com/WhatDothLife/tripolys_data/-/blob/master/16/majority_deny.csv)
 and this is how you can test them:
 
 ```
