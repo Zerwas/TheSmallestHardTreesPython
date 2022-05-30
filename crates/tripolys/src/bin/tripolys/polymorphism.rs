@@ -114,6 +114,11 @@ pub fn command(args: &ArgMatches) -> CmdResult {
         .level_wise(args.is_present("level-wise"))
         .conservative(args.is_present("conservative"))
         .idempotent(args.is_present("idempotent"));
+    let filter = args.value_of("filter").map(|v| match v {
+        "deny" => false,
+        "admit" => true,
+        &_ => unreachable!(),
+    });
 
     if let (Some(input_path), Some(output_path)) = (args.value_of("input"), args.value_of("output"))
     {
@@ -125,7 +130,7 @@ pub fn command(args: &ArgMatches) -> CmdResult {
             let _ = lines.next();
         }
         for line in lines {
-            if let Some(s) = line.split(';').next() {
+            if let Some(s) = line.split(',').next() {
                 graphs.push(from_edge_list(s));
             }
         }
@@ -136,24 +141,11 @@ pub fn command(args: &ArgMatches) -> CmdResult {
         let start = std::time::Instant::now();
 
         graphs.into_par_iter().for_each(|item| {
-            // TODO remove clone --------------------------v
             let problem = create_meta_problem(&item, condition, config).unwrap();
             let mut solver = BTSolver::new(&problem);
             let found = solver.solution_exists();
 
-            let write = if let Some(filter) = args.value_of("filter") {
-                match filter {
-                    "deny" => !found,
-                    "admit" => found,
-                    &_ => {
-                        unreachable!()
-                    }
-                }
-            } else {
-                true
-            };
-
-            if write {
+            if filter.map_or(true, |v| v ^ found) {
                 log.lock()
                     .unwrap()
                     .add(item, found, solver.stats().unwrap());
@@ -314,9 +306,7 @@ impl SearchLog {
     }
 
     pub fn write_csv<P: AsRef<Path>>(&self, path: P) -> Result<(), std::io::Error> {
-        let mut wtr = WriterBuilder::new()
-            .has_headers(true)
-            .from_path(&path)?;
+        let mut wtr = WriterBuilder::new().has_headers(true).from_path(&path)?;
         for record in &self.0 {
             wtr.serialize(record)?;
         }
