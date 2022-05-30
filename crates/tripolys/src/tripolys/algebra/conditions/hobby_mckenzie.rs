@@ -36,41 +36,28 @@ impl Condition for HobbyMcKenzie {
     where
         for<'a> G: Vertices<'a>,
     {
+        let n = self.length;
         let mut partition = Vec::new();
 
         for x in g.vertices() {
-            partition.push(
-                (0..(2 * self.length + 3))
-                    .map(|i| (i, vec![x, x, x]))
-                    .collect_vec(),
-            );
+            partition.push((0..(2 * n + 3)).map(|i| (i, vec![x, x, x])).collect_vec());
 
             for y in g.vertices() {
                 if x == y {
                     continue;
                 }
-                partition.push(vec![
-                    (self.length + 0, vec![x, y, y]),
-                    (self.length + 1, vec![x, y, y]),
-                ]);
-                partition.push(vec![
-                    (self.length + 1, vec![x, x, y]),
-                    (self.length + 2, vec![x, x, y]),
-                ]);
+                partition.push(vec![(n + 0, vec![x, y, y]), (n + 1, vec![x, y, y])]);
+                partition.push(vec![(n + 1, vec![x, x, y]), (n + 2, vec![x, x, y])]);
 
-                for (d, i) in (0..self.length)
-                    .step_by(2)
-                    .cartesian_product([0, self.length + 2])
-                {
-                    partition.push(vec![(i + d, vec![x, y, y]), (i + d + 1, vec![x, y, y])]);
+                for j in (0..n).step_by(2) {
+                    partition.push(vec![(j, vec![x, y, y]), (j + 1, vec![x, y, y])]);
+                    partition.push(vec![(j + n + 2, vec![x, y, y]), (j + n + 3, vec![x, y, y])]);
+                    partition.push(vec![(j + n + 2, vec![x, y, x]), (j + n + 3, vec![x, y, x])]);
                 }
-                for (d, i) in (0..self.length)
-                    .skip(1)
-                    .step_by(2)
-                    .cartesian_product([0, self.length + 2])
-                {
-                    partition.push(vec![(i + d, vec![x, y, y]), (i + d + 1, vec![x, y, y])]);
-                    partition.push(vec![(i + d, vec![x, y, x]), (i + d + 1, vec![x, y, x])]);
+                for j in (0..n).skip(1).step_by(2) {
+                    partition.push(vec![(j, vec![x, x, y]), (j + 1, vec![x, x, y])]);
+                    partition.push(vec![(j, vec![x, y, x]), (j + 1, vec![x, y, x])]);
+                    partition.push(vec![(j + n + 2, vec![x, x, y]), (j + n + 3, vec![x, x, y])]);
                 }
             }
         }
