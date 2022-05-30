@@ -8,8 +8,10 @@ pub struct KearnesKiss {
     length: usize,
 }
 
-pub fn kiss_kearnes(length: usize) -> KearnesKiss {
-    KearnesKiss { length }
+impl KearnesKiss {
+    pub fn with_length(n: usize) -> KearnesKiss {
+        KearnesKiss { length: n }
+    }
 }
 
 impl Precolor for KearnesKiss {}

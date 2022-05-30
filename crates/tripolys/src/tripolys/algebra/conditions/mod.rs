@@ -3,7 +3,7 @@
 mod hageman_mitschke;
 mod hobby_mckenzie;
 mod jonsson;
-mod kiss_kearnes;
+mod kearnes_kiss;
 mod kmm;
 mod maltsev;
 mod near_unamity;
@@ -14,7 +14,7 @@ mod sigma;
 pub use hageman_mitschke::*;
 pub use hobby_mckenzie::*;
 pub use jonsson::*;
-pub use kiss_kearnes::*;
+pub use kearnes_kiss::*;
 pub use kmm::*;
 pub use near_unamity::*;
 pub use noname::*;
@@ -88,7 +88,7 @@ mod tests {
             // }
         }
 
-        test(siggers());
+        // test();
         // test(Sigma(2));
         // test(Sigma(3));
         // test(Wnu(3));

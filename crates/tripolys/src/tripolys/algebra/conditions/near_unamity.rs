@@ -16,7 +16,7 @@ impl Operation for Majority {
     where
         for<'a> G: Vertices<'a>,
     {
-        near_unamity(3).partition(vertices)
+        NearUnamity::with_arity(3).partition(vertices)
     }
 }
 
@@ -48,11 +48,7 @@ impl Operation for NearUnamity {
 
 /// m(x,x,y) = m(x,y,x) = m(y,x,x) = m(x,x,x) = x
 #[derive(Clone, Copy, Debug)]
-pub struct Majority {}
-
-pub fn majority() -> Majority {
-    Majority {}
-}
+pub struct Majority;
 
 impl Precolor for Majority {
     fn precolor<V: PartialEq + Copy>(&self, (_, v): &(usize, Vec<V>)) -> Option<V> {
@@ -70,8 +66,10 @@ pub struct NearUnamity {
     arity: usize,
 }
 
-pub fn near_unamity(arity: usize) -> NearUnamity {
-    NearUnamity { arity }
+impl NearUnamity {
+    pub fn with_arity(k: usize) -> NearUnamity {
+        NearUnamity { arity: k }
+    }
 }
 
 impl Precolor for NearUnamity {
@@ -90,8 +88,10 @@ pub struct WeakNearUnamity {
     arity: usize,
 }
 
-pub fn weak_near_unamity(arity: usize) -> WeakNearUnamity {
-    WeakNearUnamity { arity }
+impl WeakNearUnamity {
+    pub fn with_arity(k: usize) -> WeakNearUnamity {
+        WeakNearUnamity { arity: k }
+    }
 }
 
 impl Precolor for WeakNearUnamity {}

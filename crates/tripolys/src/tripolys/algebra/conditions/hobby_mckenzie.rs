@@ -8,8 +8,10 @@ pub struct HobbyMcKenzie {
     length: usize,
 }
 
-pub fn hobby_mckenzie(length: usize) -> HobbyMcKenzie {
-    HobbyMcKenzie { length }
+impl HobbyMcKenzie {
+    pub fn with_length(n: usize) -> HobbyMcKenzie {
+        HobbyMcKenzie { length: n }
+    }
 }
 
 impl Precolor for HobbyMcKenzie {

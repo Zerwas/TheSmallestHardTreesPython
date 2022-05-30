@@ -6,8 +6,10 @@ pub struct HagemanMitschke {
     length: usize,
 }
 
-pub fn hageman_mitschke(length: usize) -> HagemanMitschke {
-    HagemanMitschke { length }
+impl HagemanMitschke {
+    pub fn with_length(n: usize) -> HagemanMitschke {
+        HagemanMitschke { length: n }
+    }
 }
 
 impl Precolor for HagemanMitschke {

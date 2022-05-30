@@ -4,11 +4,7 @@ use super::{Arity, HeightOne, Operation, Partition, Precolor};
 
 /// s(a,r,e,a) = s(r,a,r,e)
 #[derive(Clone, Copy, Debug)]
-pub struct Siggers {}
-
-pub fn siggers() -> Siggers {
-    Siggers {}
-}
+pub struct Siggers;
 
 impl Precolor for Siggers {}
 

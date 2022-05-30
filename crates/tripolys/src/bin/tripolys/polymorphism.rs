@@ -206,21 +206,25 @@ impl std::error::Error for MPError {}
 
 fn create_meta_problem(h: &AdjMatrix, s: &str, config: Config) -> Result<MetaProblem, MPError> {
     match s {
-        "majority" => Ok(MetaProblem::new(h, majority(), config)),
-        "siggers" => Ok(MetaProblem::new(h, siggers(), config)),
-        "kmm" => Ok(MetaProblem::new(h, kearnes_markov_mckenzie(), config)),
+        "majority" => Ok(MetaProblem::new(h, Majority, config)),
+        "siggers" => Ok(MetaProblem::new(h, Siggers, config)),
+        "kmm" => Ok(MetaProblem::new(h, Kmm, config)),
         _ => {
             if let Some((pr, su)) = s.split_once('-') {
                 if let Ok(pr) = pr.parse() {
                     match su {
-                        "wnu" => Ok(MetaProblem::new(h, weak_near_unamity(pr), config)),
-                        "nu" => Ok(MetaProblem::new(h, near_unamity(pr), config)),
+                        "wnu" => Ok(MetaProblem::new(h, WeakNearUnamity::with_arity(pr), config)),
+                        "nu" => Ok(MetaProblem::new(h, NearUnamity::with_arity(pr), config)),
                         // "sigma" => Ok(MetaProblem::new(h, Sigma(pr))),
-                        "j" => Ok(MetaProblem::new(h, jonsson(pr), config)),
-                        "hm" => Ok(MetaProblem::new(h, hageman_mitschke(pr), config)),
-                        "kk" => Ok(MetaProblem::new(h, kiss_kearnes(pr), config)),
-                        "hmck" => Ok(MetaProblem::new(h, hobby_mckenzie(pr), config)),
-                        "nn" => Ok(MetaProblem::new(h, no_name(pr), config)),
+                        "j" => Ok(MetaProblem::new(h, Jonsson::with_length(pr), config)),
+                        "hm" => Ok(MetaProblem::new(
+                            h,
+                            HagemanMitschke::with_length(pr),
+                            config,
+                        )),
+                        "kk" => Ok(MetaProblem::new(h, KearnesKiss::with_length(pr), config)),
+                        "hmck" => Ok(MetaProblem::new(h, HobbyMcKenzie::with_length(pr), config)),
+                        "nn" => Ok(MetaProblem::new(h, NoName::with_length(pr), config)),
                         &_ => Err(MPError),
                     }
                 } else {

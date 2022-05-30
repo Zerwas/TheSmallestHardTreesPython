@@ -3,11 +3,7 @@ use crate::digraph::traits::Vertices;
 use super::{Arity, Condition, Partition, Precolor};
 
 /// p(x,y,y) = q(y,x,x) = q(x,x,y), p(x,y,x) = q(x,y,x)
-pub struct Kmm {}
-
-pub fn kearnes_markov_mckenzie() -> Kmm {
-    Kmm {}
-}
+pub struct Kmm;
 
 impl Precolor for Kmm {}
 

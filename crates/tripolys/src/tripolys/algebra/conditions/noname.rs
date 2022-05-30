@@ -6,8 +6,10 @@ pub struct NoName {
     length: usize,
 }
 
-pub fn no_name(length: usize) -> NoName {
-    NoName { length }
+impl NoName {
+    pub fn with_length(n: usize) -> NoName {
+        NoName { length: n }
+    }
 }
 
 impl Precolor for NoName {

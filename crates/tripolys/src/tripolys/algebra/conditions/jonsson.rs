@@ -8,8 +8,10 @@ pub struct Jonsson {
     length: usize,
 }
 
-pub fn jonsson(length: usize) -> Jonsson {
-    Jonsson { length }
+impl Jonsson {
+    pub fn with_length(n: usize) -> Jonsson {
+        Jonsson { length: n }
+    }
 }
 
 impl Precolor for Jonsson {}
