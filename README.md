@@ -43,34 +43,27 @@ cargo build --release
 ```
 The executable can be found in `./target/release/tripolys`.
 
-<!--
-Data
------------------
--->
-<!-- The slurm-scripts to reproduce the main experiments are in the subfolders under -->
-<!-- "scripts". You may need to modify the path to the data folder via the -->
-<!-- argument `data_path`. -->
-
 
 Usage
 -----------------
 
-
 ### Generate small trees and core trees
-
 In Section 4, we introduce algorithms to generate small trees and core trees.
 The numbers of such trees are given in Table 2 in Section 7.
 
 - Generate all trees with number of vertices between `n` and `m`:
 ```
-  ./tripolys generate -s n -e m
+tripolys generate -s n -e m
 ```
 
 - Generate all core trees with number of vertices between `n` and `m`:
   
 ```
-  ./tripolys generate -s n -e m --core
+tripolys generate -s n -e m --core
 ```
+
+You may need to modify the path to the data folder via the option `data_path`
+[default value: `./data`]. 
 
 ### The smallest NP-hard trees (Section 7.1.1) 
 
@@ -117,7 +110,7 @@ and this is how you can test them:
 
 ```
 cd data/16
-./tripolys polymorphism -i cores.edges -o no_majority.csv -c majority -f deny
+tripolys polymorphism -i cores.edges -o no_majority.csv -c majority -f deny
 ```
 (TODO how to run the tests for KK, HMcK, J?)
 
@@ -128,15 +121,17 @@ TODO
 Other usage examples
 -----------------
 Use `--help`
-
 ```
-./tripolys polymorphism -g graph -c 3-wnu -I
-```
-```
-./tripolys homomorphism -f graph -t t3
+tripolys polymorphism -g 1011000,1001111,010111 -c kmm -I
 ```
 ```
-./tripolys homomorphism -f p5 -t c2
+tripolys polymorphism -g graph -c 3-wnu -I
+```
+```
+tripolys homomorphism -f graph -t t3
+```
+```
+tripolys homomorphism -f p5 -t c2
 ```
 
 Contact
@@ -148,11 +143,3 @@ License
 This program is released under the terms of the GNU General Public License v3.0.
 
 Visit this [page](http://gnugpl.org/) for license details.
-
-
-<!-- Acknowledgements -->
-<!-- -------------------------- -->
-<!-- The work was supported by the Center for Information Services and High -->
-<!-- Performance Computing [Zentrum für Informationsdienste und Hochleistungsrechnen -->
-<!-- (ZIH)] at TU Dresden which provided its facilities for high throughput -->
-<!-- calculations. -->
