@@ -26,7 +26,7 @@ pub fn cli() -> App<'static, 'static> {
         .setting(AppSettings::DisableVersion)
         .setting(AppSettings::VersionlessSubcommands)
         .author("Michael W. <michael.wernthaler@posteo.de>")
-        .about("A program for studying graph colouring problems.")
+        .about("A program for checking homomorphisms and testing polymorphism conditions of directed graphs.")
         .subcommands([
             endomorphism::cli(),
             homomorphism::cli(),
@@ -118,43 +118,43 @@ impl std::error::Error for ClassNotFound {}
 
 pub fn parse_triad<G>(s: &str) -> Result<G, ParseTriadError>
 where
-    G: Buildable,
+    G: Buildable + std::fmt::Debug,
+    G::Vertex: std::fmt::Debug,
 {
     if s.matches(',').count() != 2 {
         return Err(ParseTriadError::NumArms);
     }
 
-    let nvertices = s.len() - 2;
-    let mut g = G::with_capacities(nvertices, nvertices - 2);
-    let root_id = g.add_vertex();
-    let mut prev_id = root_id;
+    let nvertices = s.len() - 1;
+    let mut g = G::with_capacities(nvertices, nvertices - 1);
+    let vertices: Vec<_> = (0..nvertices).map(|_| g.add_vertex()).collect();
+    let mut j = 1;
 
     for arm in s.split(',') {
         for (i, c) in arm.chars().enumerate() {
-            let id = g.add_vertex();
-
             match c {
                 '1' => {
                     if i == 0 {
-                        g.add_edge(id, root_id);
+                        g.add_edge(vertices[j], vertices[0]);
                     } else {
-                        g.add_edge(id, prev_id);
+                        g.add_edge(vertices[j], vertices[j - 1]);
                     }
                 }
                 '0' => {
                     if i == 0 {
-                        g.add_edge(root_id, id);
+                        g.add_edge(vertices[0], vertices[j]);
                     } else {
-                        g.add_edge(prev_id, id);
+                        g.add_edge(vertices[j - 1], vertices[j]);
                     }
                 }
                 c => {
                     return Err(ParseTriadError::InvalidCharacter(c));
                 }
             }
-            prev_id = id;
+            j += 1;
         }
     }
+
     Ok(g)
 }
 

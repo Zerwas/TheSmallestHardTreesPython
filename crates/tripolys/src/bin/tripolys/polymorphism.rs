@@ -24,18 +24,18 @@ const AVAILABLE_CONDITIONS: [&str; 9] = [
 pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("polymorphism")
         .setting(AppSettings::DeriveDisplayOrder)
-        .about("Study the polymorphisms of finite digraphs")
+        .about("Study the polymorphisms of directed graphs")
         .arg(
             Arg::with_name("idempotent")
                 .short("I")
                 .long("idempotent")
-                .help("Require idempotence TODO"),
+                .help("Require idempotence"),
         )
         .arg(
             Arg::with_name("conservative")
                 .short("C")
                 .long("conservative")
-                .help("Require conservativity TODO"),
+                .help("Require conservativity"),
         )
         .arg(
             Arg::with_name("list")
@@ -48,8 +48,8 @@ pub fn cli() -> App<'static, 'static> {
                 .short("c")
                 .long("condition")
                 .takes_value(true)
-                .value_name("NAME")
-                .help("The name of the condition the polymorphism must satisfy (see all conditions with --list)")
+                .value_name("COND")
+                .help("Check for polymorphisms satisfying condition COND [see all conditions with --list]")
                 .required_unless("list"),
         )
         .arg(
@@ -64,7 +64,7 @@ pub fn cli() -> App<'static, 'static> {
                 .long("graph")
                 .takes_value(true)
                 .value_name("H")
-                .help("Check for polymorphisms of graph H"),
+                .help("Check for polymorphisms of graph H [e.g. 0111,00,0 / graph.csv]"),
         )
         .arg(
             Arg::with_name("input")
@@ -82,7 +82,7 @@ pub fn cli() -> App<'static, 'static> {
                 .requires("input")
                 .takes_value(true)
                 .value_name("FILE")
-                .help("The name of the file to which the results are written"),
+                .help("Write the results for each checked graph to FILE"),
         )
         .arg(
             Arg::with_name("filter")
@@ -92,7 +92,7 @@ pub fn cli() -> App<'static, 'static> {
                 .takes_value(true)
                 .value_name("PREDICATE")
                 .possible_values(&["deny", "admit"])
-                .help("Filter graphs which deny/admit a polymorphism"),
+                .help("Filter graphs from output, if they deny/admit polymorphisms"),
         )
         .group(
             ArgGroup::with_name("variant")

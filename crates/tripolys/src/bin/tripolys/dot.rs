@@ -1,10 +1,11 @@
-use clap::{App, Arg, ArgMatches, SubCommand};
+use clap::{App, Arg, ArgMatches, SubCommand, AppSettings};
 use tripolys::digraph::{formats::to_dot, AdjMatrix};
 
 use crate::{parse_graph, CmdResult};
 
 pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("dot")
+        .setting(AppSettings::Hidden)
         .about("Convert a graph to dot format")
         .arg(
             Arg::with_name("graph")

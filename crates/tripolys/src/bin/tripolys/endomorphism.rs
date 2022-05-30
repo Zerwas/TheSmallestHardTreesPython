@@ -51,7 +51,7 @@ pub fn command(args: &ArgMatches) -> CmdResult {
             if result {
                 println!("{}", format!("  ✓ {} is a core", s).green());
             } else {
-                println!("{}", format!("  ✘ {} is not a core", s).red());
+                println!("{}", format!("  ! {} is not a core", s).red());
             }
 
             println!("\nComputation time: {}s", (tend - tstart).as_seconds_f32());

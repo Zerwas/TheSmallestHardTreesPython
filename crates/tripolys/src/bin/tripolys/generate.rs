@@ -12,7 +12,7 @@ use crate::CmdResult;
 pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("generate")
         .setting(AppSettings::DeriveDisplayOrder)
-        .about("Generate trees with a given number of vertices")
+        .about("Generate orientations of trees")
         .arg(
             Arg::with_name("core")
                 .short("core")
