@@ -31,7 +31,6 @@ impl Condition for HobbyMcKenzie {
         vec![3; 2 * self.length + 3]
     }
 
-    #[allow(clippy::identity_op)]
     fn partition<G>(&self, g: &G) -> Partition<(usize, Vec<G::Vertex>)>
     where
         for<'a> G: Vertices<'a>,
@@ -46,7 +45,7 @@ impl Condition for HobbyMcKenzie {
                 if x == y {
                     continue;
                 }
-                partition.push(vec![(n + 0, vec![x, y, y]), (n + 1, vec![x, y, y])]);
+                partition.push(vec![(n, vec![x, y, y]), (n + 1, vec![x, y, y])]);
                 partition.push(vec![(n + 1, vec![x, x, y]), (n + 2, vec![x, x, y])]);
 
                 for j in (0..n).step_by(2) {
