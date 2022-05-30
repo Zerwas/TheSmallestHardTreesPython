@@ -316,7 +316,6 @@ impl SearchLog {
     pub fn write_csv<P: AsRef<Path>>(&self, path: P) -> Result<(), std::io::Error> {
         let mut wtr = WriterBuilder::new()
             .has_headers(true)
-            .delimiter(b';')
             .from_path(&path)?;
         for record in &self.0 {
             wtr.serialize(record)?;
