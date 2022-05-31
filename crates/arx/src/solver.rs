@@ -71,6 +71,8 @@ pub(crate) enum BTError {
 pub struct SolveStats {
     /// Number of consistency checks
     pub ccks: u32,
+    /// Number of recursive calls
+    pub calls: u32,
     /// Number of backtracks from dead ends
     pub backtracks: u32,
     /// Number of solutions emitted
@@ -271,59 +273,44 @@ impl<'p, P: Problem> BTSolver<'p, P> {
     where
         F: FnMut(Solution),
     {
-        let mut backtrack = false;
-        let mut depth = 0;
+        stat!(self.calls += 1);
+        let mut status = Ok(());
 
-        loop {
-            if depth == self.domains.vars_count() {
-                // We have a solution
-                let solution = self.domains.assignment().unwrap();
-                trace!("==> Valid solution: {:?}", solution);
-                stat!(self.solutions += 1);
-                out(solution);
+        if let Some(x) = self.variables.pop() {
+            trace!("Selected variable = {}", x);
 
-                if self.config.stop_at_first {
-                    return Err(BTError::RequestedStop);
-                }
-                if depth == 0 {
-                    return Ok(());
+            for i in self.domains.indices(x) {
+                trace!("Assignment: {} -> {}", x, self.domains.value(x, i));
+                self.assign(x, i);
+
+                if self.mac3(self.neighbors[*x].clone()) {
+                    trace!("Propagation successful, recursing...");
+                    // Repeat the algorithm recursively on the reduced domains
+                    status = self.solve_inner(out);
                 } else {
-                    depth -= 1;
+                    trace!("Detected inconsistency, backtracking...");
+                    stat!(self.backtracks += 1);
+                }
+                self.unassign(x);
+
+                if status.is_err() {
+                    break;
                 }
             }
-            let x = self.variables[depth];
-            trace!("> Selected variable = {}", x);
+            self.variables.push(x);
 
-            if let Some(i) = self.domains.indices(x).next() {
-                if backtrack {
-                    self.unassign(x);
-                    backtrack = false;
-                    if depth == 0 {
-                        return Ok(());
-                    } else {
-                        depth -= 1;
-                    }
-                } else {
-                    trace!("  - Assignment: {} -> {}", x, self.domains.value(x, i));
-                    self.assign(x, i);
+            status
+        } else {
+            // We have a solution
+            let solution = self.domains.assignment().unwrap();
+            trace!("==> Valid solution: {:?}", solution);
+            stat!(self.solutions += 1);
+            out(solution);
 
-                    if self.mac3(self.neighbors[*x].clone()) {
-                        trace!("  - Propagation successful...");
-                        depth += 1;
-                    } else {
-                        trace!("  - Detected inconsistency, backtracking...");
-                        stat!(self.backtracks += 1);
-                        self.unassign(x);
-                    }
-                }
+            if self.config.stop_at_first {
+                Err(BTError::RequestedStop)
             } else {
-                trace!("  - Detected emtpy list, backtracking...");
-                backtrack = true;
-                if depth == 0 {
-                    return Ok(());
-                } else {
-                    depth -= 1;
-                }
+                Ok(())
             }
         }
     }
