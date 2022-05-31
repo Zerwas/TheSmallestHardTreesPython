@@ -4,19 +4,8 @@ use crate::tree::{is_core_tree, is_rooted_core_tree, Tree};
 use itertools::Itertools;
 use rayon::prelude::*;
 
-// macro_rules! stat {
-//     ($c:ident . $field:ident $($t:tt)*) => {
-//         #[cfg(feature = "stats")]
-//         {
-//             if let Some(ref mut st) = $c.stats {
-//                 st . $field $($t)*;
-//             }
-//         }
-//     }
-// }
-
 #[derive(Clone, Copy)]
-pub struct Config {
+pub struct TreeGenSettings {
     /// Number of vertices to start at
     pub start: usize,
     /// Number of vertices to end at (inclusive)
@@ -28,12 +17,12 @@ pub struct Config {
     /// Only enumerate triads
     pub triad: bool,
     /// Record statistics
-    pub stats: Option<Stats>,
+    pub stats: Option<TreeGenStats>,
 }
 
 /// Statistics from tree generation
 #[derive(Clone, Copy, Default)]
-pub struct Stats {
+pub struct TreeGenStats {
     /// Time for rooted core checks
     pub rcc_time: f32,
     /// Number of generated rooted trees
@@ -44,31 +33,31 @@ pub struct Stats {
     pub num_cc: usize,
 }
 
-impl Default for Config {
-    fn default() -> Config {
-        Config {
+impl Default for TreeGenSettings {
+    fn default() -> TreeGenSettings {
+        TreeGenSettings {
             start: 1,
             end: 10,
             max_arity: 2,
             core: true,
             triad: false,
-            stats: Some(Stats::default()),
+            stats: Some(TreeGenStats::default()),
         }
     }
 }
 
 pub struct TreeGenerator {
     rooted_trees: Vec<Vec<Arc<Tree>>>,
-    config: Config,
+    config: TreeGenSettings,
     nvertices: usize,
 }
 
 impl TreeGenerator {
     pub fn new() -> TreeGenerator {
-        TreeGenerator::with_config(Config::default())
+        TreeGenerator::with_config(TreeGenSettings::default())
     }
 
-    pub fn with_config(config: Config) -> TreeGenerator {
+    pub fn with_config(config: TreeGenSettings) -> TreeGenerator {
         assert!(
             !(config.triad && config.start < 4),
             "There is no triad with {} nodes",
@@ -90,8 +79,12 @@ impl TreeGenerator {
     /// Returns all unique sets of `n` rooted trees whose number of nodes sum
     /// up to `total`. The trees are sorted by their number of nodes in
     /// ascending order.
-    fn rooted_trees(&self, total: usize, n: usize) -> impl Iterator<Item = Vec<Arc<Tree>>> + '_ {
-        addends(total, n)
+    fn rooted_trees(
+        &self,
+        nvertices: usize,
+        n: usize,
+    ) -> impl Iterator<Item = Vec<Arc<Tree>>> + '_ {
+        addends(nvertices, n)
             .into_iter()
             .flat_map(|vec| {
                 vec.into_iter()
@@ -170,7 +163,7 @@ impl TreeGenerator {
         }
     }
 
-    pub fn next(&mut self) -> Vec<Tree> {
+    pub fn generate(&mut self) -> Vec<Tree> {
         if self.nvertices == 1 {
             return vec![Tree::leaf()];
         }
@@ -260,18 +253,18 @@ fn addends(sum: usize, n: usize) -> Vec<Vec<usize>> {
 }
 
 #[derive(Debug)]
-pub enum NumNodesError {
-    Tree(usize),
-    Triad(usize),
+pub enum TreeGenError {
+    TreeNumVertices(usize),
+    TriadNumVertices(usize),
 }
 
-impl std::fmt::Display for NumNodesError {
+impl std::fmt::Display for TreeGenError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match *self {
-            NumNodesError::Tree(n) => write!(f, "There is no tree with {} nodes", n),
-            NumNodesError::Triad(n) => write!(f, "There is no triad with {} nodes", n),
+            TreeGenError::TreeNumVertices(n) => write!(f, "There is no tree with {} nodes", n),
+            TreeGenError::TriadNumVertices(n) => write!(f, "There is no triad with {} nodes", n),
         }
     }
 }
 
-impl std::error::Error for NumNodesError {}
+impl std::error::Error for TreeGenError {}
