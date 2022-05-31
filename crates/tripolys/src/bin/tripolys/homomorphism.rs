@@ -75,12 +75,8 @@ pub fn command(args: &ArgMatches) -> CmdResult {
     if let Some(stats) = solver.stats() {
         println!("{: <12} {}", "#ccks:", stats.ccks);
         println!("{: <12} {}", "#backtracks:", stats.backtracks);
-        println!("{: <12} {:?}s", "ac3_time", stats.ac3_time.as_seconds_f32());
-        println!(
-            "{: <12} {:?}s",
-            "mac3_time:",
-            stats.mac3_time.as_seconds_f32()
-        );
+        println!("{: <12} {}s", "ac3_time", stats.ac3_time.as_secs_f32());
+        println!("{: <12} {}s", "mac3_time:", stats.mac3_time.as_secs_f32());
     }
 
     Ok(())

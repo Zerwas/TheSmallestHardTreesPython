@@ -1,5 +1,4 @@
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
-use time::OffsetDateTime;
 use tripolys::digraph::formats::to_edge_list;
 
 use std::io::{BufWriter, Write};
@@ -88,10 +87,10 @@ pub fn command(args: &ArgMatches) -> CmdResult {
     for num_vertices in start..=end {
         println!("\n> #vertices: {}", num_vertices);
         println!("  > Generating trees...");
-        let start = OffsetDateTime::now_utc();
+        let start = std::time::Instant::now();
         let trees = generator.next();
-        let end = OffsetDateTime::now_utc();
-        println!("    - total_time: {}s", (end - start).as_seconds_f32());
+        let end = start.elapsed();
+        println!("    - total_time: {}s", end.as_secs_f32());
         let dir_name = if num_vertices < 10 {
             String::from("0") + &num_vertices.to_string()
         } else {

@@ -5,12 +5,12 @@ use csv::WriterBuilder;
 use rayon::prelude::*;
 use serde::ser::SerializeStruct;
 use serde::{Serialize, Serializer};
-use time::Duration;
 use tripolys::digraph::formats::from_edge_list;
 use tripolys::digraph::AdjMatrix;
 
 use std::fmt::Display;
 use std::path::Path;
+use std::time::Duration;
 
 use tripolys::algebra::MetaProblem;
 use tripolys::algebra::{conditions::*, Config};
@@ -180,11 +180,11 @@ pub fn command(args: &ArgMatches) -> CmdResult {
     if let Some(stats) = solver.stats() {
         println!("{: <12} {}", "#ccks:", stats.ccks);
         println!("{: <12} {}", "#backtracks:", stats.backtracks);
-        println!("{: <12} {:?}s", "ac3_time", stats.ac3_time.as_seconds_f32());
+        println!("{: <12} {:?}s", "ac3_time", stats.ac3_time.as_secs_f32());
         println!(
             "{: <12} {:?}s",
             "mac3_time:",
-            stats.mac3_time.as_seconds_f32()
+            stats.mac3_time.as_secs_f32()
         );
     }
 
@@ -285,14 +285,14 @@ impl Serialize for Record {
         state.serialize_field("tree", &self.tree)?;
         state.serialize_field("found", &self.found)?;
         state.serialize_field("backtracks", &self.backtracks)?;
-        state.serialize_field("ac3_time", &format!("{}s", self.ac3_time.as_seconds_f32()))?;
+        state.serialize_field("ac3_time", &format!("{}s", self.ac3_time.as_secs_f32()))?;
         state.serialize_field(
             "mac3_time",
-            &format!("{}s", self.mac3_time.as_seconds_f32()),
+            &format!("{}s", self.mac3_time.as_secs_f32()),
         )?;
         state.serialize_field(
             "total_time",
-            &format!("{}s", self.total_time.as_seconds_f32()),
+            &format!("{}s", self.total_time.as_secs_f32()),
         )?;
         state.end()
     }
