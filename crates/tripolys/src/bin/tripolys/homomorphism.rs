@@ -5,7 +5,7 @@ use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 use colored::Colorize;
 use tripolys::hcoloring::Instance;
 
-use crate::{parse_graph, CmdResult};
+use crate::{parse_graph, print_stats, CmdResult};
 
 pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("homomorphism")
@@ -18,7 +18,7 @@ pub fn cli() -> App<'static, 'static> {
                 .value_name("G")
                 .takes_value(true)
                 .required(true)
-                .help("TODO"),
+                .help("Check for homomorphism from graph G..."),
         )
         .arg(
             Arg::with_name("to")
@@ -27,7 +27,7 @@ pub fn cli() -> App<'static, 'static> {
                 .value_name("H")
                 .takes_value(true)
                 .required(true)
-                .help("TODO"),
+                .help("...to graph H"),
         )
         .arg(
             Arg::with_name("precolor")
@@ -35,7 +35,8 @@ pub fn cli() -> App<'static, 'static> {
                 .long("precolor")
                 .value_name("FILE")
                 .takes_value(true)
-                .help("TODO"),
+                .conflicts_with("lists")
+                .help("...with precoloring for some vertices [each line holding v:p(v)]"),
         )
         .arg(
             Arg::with_name("lists")
@@ -43,7 +44,8 @@ pub fn cli() -> App<'static, 'static> {
                 .long("lists")
                 .value_name("FILE")
                 .takes_value(true)
-                .help("TODO"),
+                .conflicts_with("precolor")
+                .help("...with lists for each vertex v [line i holding l(i) given by comma-seperated values]"),
         )
 }
 
@@ -73,10 +75,7 @@ pub fn command(args: &ArgMatches) -> CmdResult {
     };
 
     if let Some(stats) = solver.stats() {
-        println!("{: <12} {}", "#ccks:", stats.ccks);
-        println!("{: <12} {}", "#backtracks:", stats.backtracks);
-        println!("{: <12} {}s", "ac3_time", stats.ac3_time.as_secs_f32());
-        println!("{: <12} {}s", "mac3_time:", stats.mac3_time.as_secs_f32());
+        print_stats(stats)
     }
 
     Ok(())

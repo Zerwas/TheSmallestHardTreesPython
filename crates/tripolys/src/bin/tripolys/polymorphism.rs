@@ -15,7 +15,7 @@ use std::time::Duration;
 use tripolys::algebra::MetaProblem;
 use tripolys::algebra::{conditions::*, Config};
 
-use crate::{parse_graph, CmdResult};
+use crate::{parse_graph, print_stats, CmdResult};
 
 const AVAILABLE_CONDITIONS: [&str; 9] = [
     "majority    majority",
@@ -49,15 +49,15 @@ pub fn cli() -> App<'static, 'static> {
             Arg::with_name("list")
                 .short("l")
                 .long("list")
-                .help("List the available conditions"),
+                .help("List available conditions"),
         )
         .arg(
             Arg::with_name("condition")
                 .short("c")
                 .long("condition")
                 .takes_value(true)
-                .value_name("COND")
-                .help("Check for polymorphisms satisfying condition COND [see all conditions with --list]")
+                .value_name("NAME")
+                .help("Name of the condition the polymorphism must satisfy [see all conditions with --list]")
                 .required_unless("list"),
         )
         .arg(
@@ -72,7 +72,7 @@ pub fn cli() -> App<'static, 'static> {
                 .long("graph")
                 .takes_value(true)
                 .value_name("H")
-                .help("Check for polymorphisms of graph H [e.g. 0111,00,0 / graph.csv]"),
+                .help("Search for polymorphisms of graph H [e.g. 0111,00,0 / graph.csv]..."),
         )
         .arg(
             Arg::with_name("input")
@@ -80,8 +80,8 @@ pub fn cli() -> App<'static, 'static> {
                 .long("input")
                 .requires("output")
                 .takes_value(true)
-                .value_name("FILE")
-                .help("Check for polymorphisms of each graph in FILE"),
+                .value_name("PATH")
+                .help("...or of every graph in file at PATH (one edge-list per line)"),
         )
         .arg(
             Arg::with_name("output")
@@ -89,8 +89,8 @@ pub fn cli() -> App<'static, 'static> {
                 .long("output")
                 .requires("input")
                 .takes_value(true)
-                .value_name("FILE")
-                .help("Write the results for each checked graph to FILE"),
+                .value_name("PATH")
+                .help("...and write the results to file at PATH"),
         )
         .arg(
             Arg::with_name("filter")
@@ -100,7 +100,7 @@ pub fn cli() -> App<'static, 'static> {
                 .takes_value(true)
                 .value_name("PREDICATE")
                 .possible_values(&["deny", "admit"])
-                .help("Filter graphs from output, if they deny/admit polymorphisms"),
+                .help("Filter graphs from output"),
         )
         .group(
             ArgGroup::with_name("variant")
@@ -178,14 +178,7 @@ pub fn command(args: &ArgMatches) -> CmdResult {
     };
 
     if let Some(stats) = solver.stats() {
-        println!("{: <12} {}", "#ccks:", stats.ccks);
-        println!("{: <12} {}", "#backtracks:", stats.backtracks);
-        println!("{: <12} {:?}s", "ac3_time", stats.ac3_time.as_secs_f32());
-        println!(
-            "{: <12} {:?}s",
-            "mac3_time:",
-            stats.mac3_time.as_secs_f32()
-        );
+        print_stats(stats)
     }
 
     Ok(())
@@ -286,14 +279,8 @@ impl Serialize for Record {
         state.serialize_field("found", &self.found)?;
         state.serialize_field("backtracks", &self.backtracks)?;
         state.serialize_field("ac3_time", &format!("{}s", self.ac3_time.as_secs_f32()))?;
-        state.serialize_field(
-            "mac3_time",
-            &format!("{}s", self.mac3_time.as_secs_f32()),
-        )?;
-        state.serialize_field(
-            "total_time",
-            &format!("{}s", self.total_time.as_secs_f32()),
-        )?;
+        state.serialize_field("mac3_time", &format!("{}s", self.mac3_time.as_secs_f32()))?;
+        state.serialize_field("total_time", &format!("{}s", self.total_time.as_secs_f32()))?;
         state.end()
     }
 }

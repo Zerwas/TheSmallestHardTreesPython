@@ -7,6 +7,7 @@
 use std::error::Error;
 use std::fmt::Debug;
 
+use arx::solver::SolveStats;
 use clap::{App, AppSettings};
 use colored::*;
 use tripolys::digraph::{classes::*, formats::from_csv, AdjMatrix};
@@ -174,3 +175,11 @@ impl std::fmt::Display for ParseTriadError {
 }
 
 impl std::error::Error for ParseTriadError {}
+
+fn print_stats(ss: &SolveStats) {
+    println!("Statistics:");
+    println!("- {: <12} {}", "#ccks:", ss.ccks);
+    println!("- {: <12} {}", "#backtracks:", ss.backtracks);
+    println!("- {: <12} {:?}s", "ac3_time:", ss.ac3_time.as_secs_f32());
+    println!("- {: <12} {:?}s", "mac3_time:", ss.mac3_time.as_secs_f32());
+}
