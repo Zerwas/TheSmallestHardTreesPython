@@ -178,8 +178,8 @@ impl std::error::Error for ParseTriadError {}
 
 fn print_stats(ss: &SolveStats) {
     println!("Statistics:");
-    println!("- {: <12} {}", "#ccks:", ss.ccks);
-    println!("- {: <12} {}", "#backtracks:", ss.backtracks);
-    println!("- {: <12} {:?}s", "ac3_time:", ss.ac3_time.as_secs_f32());
-    println!("- {: <12} {:?}s", "mac3_time:", ss.mac3_time.as_secs_f32());
+    println!("- {: <14} {:?}s", "t(ac3):", ss.ac3_time.as_secs_f32());
+    println!("- {: <14} {:?}s", "t(mac3):", ss.mac3_time.as_secs_f32());
+    println!("- {: <14} {}", "#backtracks:", ss.backtracks);
+    println!("- {: <14} {}", "#cons. checks:", ss.ccks);
 }
