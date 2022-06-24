@@ -122,10 +122,10 @@ Other usage examples
 -----------------
 Use `--help`
 ```
-tripolys polymorphism -g 1011000,1001111,010111 -c kmm -I -L
+tripolys polymorphism -g 1011000,1001111,010111 -c kmm -I
 ```
 ```
-tripolys polymorphism -g k3 -c 3-wnu -I -L
+tripolys polymorphism -g k3 -c 3-wnu -I
 ```
 ```
 tripolys homomorphism -f graph -t t3
