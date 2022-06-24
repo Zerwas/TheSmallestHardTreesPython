@@ -15,5 +15,5 @@
 
 pub mod algebra;
 pub mod digraph;
-pub mod tree;
 pub mod hcoloring;
+pub mod tree;

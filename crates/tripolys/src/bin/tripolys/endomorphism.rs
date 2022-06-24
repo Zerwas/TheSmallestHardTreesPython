@@ -4,7 +4,7 @@ use colored::*;
 use itertools::Itertools;
 use tripolys::{digraph::AdjMatrix, hcoloring::Instance};
 
-use crate::{parse_graph, CmdResult, print_stats};
+use crate::{parse_graph, print_stats, CmdResult};
 
 pub fn cli() -> App<'static, 'static> {
     SubCommand::with_name("endomorphism")

@@ -10,10 +10,10 @@ use tripolys::digraph::AdjMatrix;
 
 use std::fmt::Display;
 use std::path::Path;
+use std::str::FromStr;
 use std::time::Duration;
 
-use tripolys::algebra::MetaProblem;
-use tripolys::algebra::{conditions::*, Config};
+use tripolys::algebra::{Condition, MetaProblem};
 
 use crate::{parse_graph, print_stats, CmdResult};
 
@@ -24,9 +24,9 @@ const AVAILABLE_CONDITIONS: [&str; 9] = [
     "kmm         Kearnes-Marković-McKenzie",
     "n-j         Jónsson chain of length n",
     "n-kk        Kearnes-Kiss chain of length n",
-    "n-hmck      HobbyMcKenzie chain of length n",
+    "n-hmck      Hobby-McKenzie chain of length n",
     "n-hm        Hagemann-Mitschke chain of length n",
-    "siggers     Siggers (consider testing for kmm, since it is faster)",
+    "siggers     Siggers (consider testing for kmm, it is faster)",
 ];
 
 pub fn cli() -> App<'static, 'static> {
@@ -117,127 +117,74 @@ pub fn command(args: &ArgMatches) -> CmdResult {
         return Ok(());
     }
 
-    let condition = args.value_of("condition").unwrap();
-    let config = Config::new()
-        .level_wise(args.is_present("level-wise"))
-        .conservative(args.is_present("conservative"))
-        .idempotent(args.is_present("idempotent"));
+    let condition = Condition::from_str(args.value_of("condition").unwrap())?;
+    let conservative = args.is_present("conservative");
+    let idempotent = args.is_present("idempotent");
+    let level_wise = args.is_present("level-wise");
+
+    let metaproblem = MetaProblem::new(condition)
+        .conservative(conservative)
+        .idempotent(idempotent)
+        .level_wise(level_wise);
+
     let filter = args.value_of("filter").map(|v| match v {
         "deny" => false,
         "admit" => true,
         &_ => unreachable!(),
     });
 
-    if let (Some(input_path), Some(output_path)) = (args.value_of("input"), args.value_of("output"))
-    {
-        let mut graphs: Vec<AdjMatrix> = Vec::new();
-        let lines = std::fs::read_to_string(input_path)?;
-        let mut lines = lines.lines();
+    if let Some(graph) = args.value_of("graph") {
+        let h: AdjMatrix = parse_graph(graph)?;
+        let instance = metaproblem.instance(&h);
+        let mut solver = BTSolver::new(&instance);
 
-        if input_path.ends_with(".csv") {
-            let _ = lines.next();
+        println!("\n> Checking for polymorphisms...");
+
+        if solver.solution_exists() {
+            println!("{}", "  ✓ Exists\n".to_string().green());
+        } else {
+            println!("{}", "  ! Doesn't exist\n".to_string().red());
+        };
+
+        if let Some(stats) = solver.stats() {
+            print_stats(stats)
         }
-        for line in lines {
-            graphs.push(from_edge_list(line));
-        }
-
-        let log = std::sync::Mutex::new(SearchLog::new());
-
-        println!("  > Checking for polymorphisms...",);
-        let start = std::time::Instant::now();
-
-        graphs.into_par_iter().for_each(|item| {
-            let problem = create_meta_problem(&item, condition, config).unwrap();
-            let mut solver = BTSolver::new(&problem);
-            let found = solver.solution_exists();
-
-            if filter.map_or(true, |v| !(v ^ found)) {
-                log.lock()
-                    .unwrap()
-                    .add(item, found, solver.stats().unwrap());
-            }
-        });
-        println!("    - total_time: {:?}", start.elapsed());
-
-        println!("  > Writing results...",);
-        log.lock().unwrap().write_csv(&output_path)?;
 
         return Ok(());
     }
 
-    let h: AdjMatrix = parse_graph(args.value_of("graph").unwrap())?;
-    let problem = create_meta_problem(&h, condition, config)?;
-    let mut solver = BTSolver::new(&problem);
+    let input_path = args.value_of("input").unwrap();
+    let output_path = args.value_of("output").unwrap();
+    let mut graphs: Vec<AdjMatrix> = Vec::new();
+    let content = std::fs::read_to_string(input_path)?;
+    let mut lines = content.lines();
 
-    println!("\n> Checking for polymorphisms...");
-
-    if solver.solution_exists() {
-        println!("{}", "  ✓ Exists\n".to_string().green());
-    } else {
-        println!("{}", "  ! Doesn't exist\n".to_string().red());
-    };
-
-    if let Some(stats) = solver.stats() {
-        print_stats(stats)
+    if input_path.ends_with(".csv") {
+        let _ = lines.next();
     }
+    for line in lines {
+        graphs.push(from_edge_list(line)); // TODO this is awkward
+    }
+
+    let log = std::sync::Mutex::new(SearchLog::new());
+    println!("  > Checking for polymorphisms...",);
+    let start = std::time::Instant::now();
+
+    graphs.into_par_iter().for_each(|h| {
+        let instance = metaproblem.instance(&h);
+        let mut solver = BTSolver::new(&instance);
+        let found = solver.solution_exists();
+
+        if filter.map_or(true, |v| !(v ^ found)) {
+            log.lock().unwrap().add(h, found, solver.stats().unwrap());
+        }
+    });
+    println!("    - total_time: {:?}", start.elapsed());
+    println!("  > Writing results...",);
+    log.lock().unwrap().write_csv(&output_path)?;
 
     Ok(())
 }
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct MPError;
-
-impl std::fmt::Display for MPError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "No condition registered with that name")
-    }
-}
-
-impl std::error::Error for MPError {}
-
-fn create_meta_problem(h: &AdjMatrix, s: &str, config: Config) -> Result<MetaProblem, MPError> {
-    match s {
-        "majority" => Ok(MetaProblem::new(h, Majority, config)),
-        "siggers" => Ok(MetaProblem::new(h, Siggers, config)),
-        "kmm" => Ok(MetaProblem::new(h, Kmm, config)),
-        _ => {
-            if let Some((pr, su)) = s.split_once('-') {
-                if let Ok(pr) = pr.parse() {
-                    match su {
-                        "wnu" => Ok(MetaProblem::new(h, WeakNearUnamity::with_arity(pr), config)),
-                        "nu" => Ok(MetaProblem::new(h, NearUnamity::with_arity(pr), config)),
-                        // "sigma" => Ok(MetaProblem::new(h, Sigma(pr))),
-                        "j" => Ok(MetaProblem::new(h, Jonsson::with_length(pr), config)),
-                        "hm" => Ok(MetaProblem::new(
-                            h,
-                            HagemanMitschke::with_length(pr),
-                            config,
-                        )),
-                        "kk" => Ok(MetaProblem::new(h, KearnesKiss::with_length(pr), config)),
-                        "hmck" => Ok(MetaProblem::new(h, HobbyMcKenzie::with_length(pr), config)),
-                        "nn" => Ok(MetaProblem::new(h, NoName::with_length(pr), config)),
-                        &_ => Err(MPError),
-                    }
-                } else {
-                    Err(MPError)
-                }
-            } else {
-                Err(MPError)
-            }
-        }
-    }
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct Error;
-
-impl std::fmt::Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "No condition registered with name")
-    }
-}
-
-impl std::error::Error for Error {}
 
 /// A struct which allows to store recorded data during the polymorphism search.
 #[derive(Debug, Default)]

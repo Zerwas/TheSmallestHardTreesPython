@@ -1,4 +1,4 @@
-use clap::{App, Arg, ArgMatches, SubCommand, AppSettings};
+use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 use tripolys::digraph::{formats::to_dot, AdjMatrix};
 
 use crate::{parse_graph, CmdResult};

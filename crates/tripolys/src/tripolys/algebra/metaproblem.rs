@@ -1,109 +1,143 @@
-use arx::problem::*;
 use bimap::BiMap;
 use indexmap::{IndexMap, IndexSet};
 use itertools::Itertools;
+use std::collections::HashMap;
 use std::hash::Hash;
+use std::str::FromStr;
 
 use crate::digraph::classes::Buildable;
 use crate::digraph::traits::{Edges, Vertices};
 use crate::digraph::{levels, AdjMatrix};
 use crate::hcoloring::Instance;
 
-use super::conditions::Condition;
 use super::IterAlgebra;
 
-/// Conditions a polymorphism must satisfy.
-///
-/// Default settings:
-///
-/// - `level_wise`: `true`,
-/// - `conservative`: `false`,
-/// - `idempotent`: `false`,
+type Partition<V> = Vec<Vec<V>>;
+
+#[derive(Debug, PartialEq, Copy, Clone)]
+pub enum Condition {
+    Kmm,
+    Siggers,
+    Majority,
+    Nu(usize),
+    Wnu(usize),
+    NoName(usize),
+    Jonsson(usize),
+    KearnesKiss(usize),
+    HobbyMcKenzie(usize),
+    HagemannMitschke(usize),
+}
+
+impl FromStr for Condition {
+    type Err = String;
+    fn from_str(s: &str) -> Result<Self, <Self as FromStr>::Err> {
+        match &*s.to_ascii_lowercase() {
+            "majority" => Ok(Condition::Majority),
+            "siggers" => Ok(Condition::Siggers),
+            "kmm" => Ok(Condition::Kmm),
+            _ => {
+                if let Some((pr, su)) = s.split_once('-') {
+                    if let Ok(pr) = pr.parse() {
+                        match su {
+                            "wnu" => Ok(Condition::Wnu(pr)),
+                            "nu" => Ok(Condition::Nu(pr)),
+                            "j" => Ok(Condition::Jonsson(pr)),
+                            "hm" => Ok(Condition::HagemannMitschke(pr)),
+                            "kk" => Ok(Condition::KearnesKiss(pr)),
+                            "hmck" => Ok(Condition::HobbyMcKenzie(pr)),
+                            "nn" => Ok(Condition::NoName(pr)),
+                            &_ => Err("unknown Condition, cannot convert from str".to_owned()),
+                        }
+                    } else {
+                        Err("unknown Condition, cannot convert from str".to_owned())
+                    }
+                } else {
+                    Err("unknown Condition, cannot convert from str".to_owned())
+                }
+            }
+        }
+    }
+}
+/// The problem of deciding whether a graph has a given type of polymorphism(s).
 #[derive(Clone, Copy, Debug)]
-pub struct Config {
+pub struct MetaProblem {
+    condition: Condition,
     level_wise: bool,
     conservative: bool,
     idempotent: bool,
 }
 
-impl Default for Config {
-    fn default() -> Self {
-        Config {
+impl MetaProblem {
+    pub fn new(condition: Condition) -> MetaProblem {
+        MetaProblem {
             level_wise: true,
             conservative: false,
             idempotent: false,
+            condition,
         }
     }
-}
 
-impl Config {
-    pub fn new() -> Config {
-        Config::default()
-    }
-
-    #[must_use]
-    pub const fn level_wise(mut self, val: bool) -> Self {
-        self.level_wise = val;
+    pub fn level_wise(mut self, flag: bool) -> Self {
+        self.level_wise = flag;
         self
     }
 
-    #[must_use]
-    pub const fn conservative(mut self, val: bool) -> Self {
-        self.conservative = val;
+    pub fn conservative(mut self, flag: bool) -> Self {
+        self.conservative = flag;
         self
     }
 
-    #[must_use]
-    pub const fn idempotent(mut self, val: bool) -> Self {
-        self.idempotent = val;
+    pub fn idempotent(mut self, flag: bool) -> Self {
+        self.idempotent = flag;
         self
     }
-}
 
-/// The problem of deciding whether a graph has a given type of polymorphism(s).
-pub struct MetaProblem {
-    instance: Instance,
-}
-
-impl MetaProblem {
-    pub fn new<C: Condition>(h: &AdjMatrix, condition: C, config: Config) -> MetaProblem {
-        let levels = levels(h).unwrap_or_default(); // TODO calculate lazyily
-        let mut ind_map = condition
-            .arities()
+    pub fn instance(self, h: &AdjMatrix) -> Instance {
+        let condition = self.condition;
+        let levels = if self.level_wise { levels(h) } else { None };
+        // Indicator graph construction
+        let mut indicator_graph = arities(condition)
             .into_iter()
             .enumerate()
             .flat_map(|(i, k)| h.edges().power(k).map(move |(u, v)| ((i, u), (i, v))))
-            .filter(|((_, u), _)| !config.level_wise || u.iter().map(|v| levels[*v]).all_equal())
+            .filter(|((_, u), _)| {
+                !self.level_wise || u.iter().map(|v| levels.as_ref().unwrap()[*v]).all_equal()
+            })
             .collect::<AdjMap<_>>();
 
-        for set in condition.partition(h) {
+        for set in partition(condition, &h.vertices().collect_vec()) {
             for i in 1..set.len() {
-                ind_map.contract_vertices(&set[0], &set[i]);
+                indicator_graph.contract_vertices(&set[0], &set[i]);
             }
         }
 
-        let mut ind_matrix =
-            AdjMatrix::with_capacities(ind_map.vertex_count(), ind_map.edge_count());
-        let vertex_map = ind_map
+        let mut indicator_matrix = AdjMatrix::with_capacities(
+            indicator_graph.vertex_count(),
+            indicator_graph.edge_count(),
+        );
+        let id_map = indicator_graph
             .vertices()
             .cloned()
-            .map(|v| (v, ind_matrix.add_vertex()))
+            .map(|v| (v, indicator_matrix.add_vertex()))
             .collect::<BiMap<_, _>>();
-        for (u, v) in ind_map.edges() {
-            ind_matrix.add_edge(
-                *vertex_map.get_by_left(&u).unwrap(),
-                *vertex_map.get_by_left(&v).unwrap(),
+
+        for (u, v) in indicator_graph.edges() {
+            indicator_matrix.add_edge(
+                *id_map.get_by_left(&u).unwrap(),
+                *id_map.get_by_left(&v).unwrap(),
             );
         }
-        let instance = Instance::with_lists(ind_matrix, h.clone(), |v| {
-            let vec = vertex_map.get_by_right(&v).unwrap();
-            if let Some(u) = condition.precolor(vec) {
+        // Indicator graph construction
+        let instance = Instance::with_lists(indicator_matrix, h.clone(), |v| {
+            let vertex = id_map.get_by_right(&v).unwrap();
+
+            if let Some(u) = precolor(condition, vertex) {
                 vec![u]
-            } else if config.conservative {
-                vec.1.to_vec()
-            } else if config.idempotent {
-                if vec.1.iter().all_equal() {
-                    vec![vec.1[0]]
+            } else if self.conservative {
+                vertex.1.to_vec()
+            } else if self.idempotent {
+                if vertex.1.iter().all_equal() {
+                    vec![vertex.1[0]]
                 } else {
                     h.vertices().collect()
                 }
@@ -112,31 +146,320 @@ impl MetaProblem {
             }
         });
 
-        MetaProblem { instance }
+        instance
     }
 }
 
-impl Constraints for MetaProblem {
-    fn arcs(&self) -> Vec<(Variable, Variable)> {
-        self.instance.arcs()
-    }
-
-    fn check(&self, ai: (Variable, Value), aj: (Variable, Value)) -> bool {
-        self.instance.check(ai, aj)
-    }
-}
-
-impl Domains for MetaProblem {
-    fn size(&self) -> usize {
-        self.instance.size()
-    }
-
-    fn domain(&self, x: Variable) -> Vec<Value> {
-        self.instance.domain(x)
+fn arities(condition: Condition) -> Vec<usize> {
+    match condition {
+        Condition::Kmm => vec![3, 3],
+        Condition::Siggers => vec![4],
+        Condition::Majority => vec![3],
+        Condition::Nu(k) => vec![k],
+        Condition::Wnu(k) => vec![k],
+        Condition::NoName(n) => vec![4; n],
+        Condition::Jonsson(n) => vec![3; n],
+        Condition::KearnesKiss(n) => vec![3; n],
+        Condition::HobbyMcKenzie(n) => vec![3; n],
+        Condition::HagemannMitschke(n) => vec![3; n],
     }
 }
 
-impl Problem for MetaProblem {}
+// Result of pre-processing for WNU/quasi-majority check
+enum ElemCount<T: Eq + Clone + Hash> {
+    // (x, x, x, y) -> (x, y)
+    Once(T, T),
+    // (x, x, x) -> (x)
+    AllEqual(T),
+    // (x, y, z, x, x) -> ()
+    None,
+}
+
+fn elem_count<T: Eq + Clone + Hash>(x: &[T]) -> ElemCount<T> {
+    // (elem, frequency of elem)
+    let elem_freq = x.iter().fold(HashMap::<T, usize>::new(), |mut m, y| {
+        *m.entry(y.clone()).or_default() += 1;
+        m
+    });
+
+    match elem_freq.len() {
+        1 => ElemCount::AllEqual(elem_freq.keys().next().cloned().unwrap()),
+        2 => {
+            let mut it = elem_freq.into_iter();
+            let (e0, f0) = it.next().unwrap();
+            let (e1, f1) = it.next().unwrap();
+            if f0 == 1 {
+                ElemCount::Once(e1, e0)
+            } else if f1 == 1 {
+                ElemCount::Once(e0, e1)
+            } else {
+                ElemCount::None
+            }
+        }
+        _ => ElemCount::None,
+    }
+}
+
+fn precolor(condition: Condition, (f, v): &(usize, Vec<usize>)) -> Option<usize> {
+    match condition {
+        Condition::Majority => {
+            if v.iter().all_equal() {
+                Some(v[0])
+            } else {
+                None
+            }
+        }
+        Condition::Nu(_) => {
+            if let ElemCount::Once(x1, _) = elem_count(v) {
+                Some(x1)
+            } else {
+                None
+            }
+        }
+        Condition::NoName(n) => {
+            if *f == 0 && v[1] == v[2] {
+                return Some(v[0]);
+            }
+            if *f == n && v[0] == v[1] {
+                return Some(v[3]);
+            }
+            None
+        }
+        Condition::HobbyMcKenzie(n) => {
+            if *f == 0 {
+                return Some(v[0]);
+            }
+            if *f == (2 * n + 2) {
+                return Some(v[2]);
+            }
+            None
+        }
+        Condition::HagemannMitschke(n) => {
+            if *f == 0 && v[1] == v[2] {
+                return Some(v[0]);
+            }
+            if *f == (n - 1) && v[0] == v[1] {
+                return Some(v[2]);
+            }
+            None
+        }
+        _ => None,
+    }
+}
+
+fn partition(condition: Condition, vertices: &[usize]) -> Partition<(usize, Vec<usize>)> {
+    match condition {
+        Condition::Kmm => {
+            let mut partition = Vec::new();
+
+            for &x in vertices {
+                for &y in vertices {
+                    if x == y {
+                        partition.push(vec![(0, vec![x, x, x]), (1, vec![x, x, x])]);
+                    }
+                    partition.push(vec![
+                        (0, vec![x, y, y]),
+                        (1, vec![y, x, x]),
+                        (1, vec![x, x, y]),
+                    ]);
+                    partition.push(vec![(0, vec![x, y, x]), (1, vec![x, y, x])]);
+                }
+            }
+
+            partition
+        }
+        Condition::Siggers => {
+            let mut vec = Vec::new();
+
+            for &x in vertices {
+                for &y in vertices {
+                    for &z in vertices {
+                        if x != y || y != z {
+                            if y == z {
+                                vec.push(vec![
+                                    (0, vec![x, y, z, x]),
+                                    (0, vec![y, x, y, z]),
+                                    (0, vec![x, z, x, y]),
+                                ]);
+                            } else if x != z {
+                                vec.push(vec![(0, vec![x, y, z, x]), (0, vec![y, x, y, z])]);
+                            }
+                        }
+                    }
+                }
+            }
+            vec
+        }
+        Condition::Majority => majority(vertices),
+        Condition::Nu(arity) => nu(vertices, arity),
+        Condition::Wnu(arity) => wnu(vertices, arity),
+        Condition::NoName(length) => {
+            let mut partition = Vec::new();
+
+            for &x in vertices {
+                for &y in vertices {
+                    for i in 0..length {
+                        partition.push(vec![(i, vec![x, x, y, x]), (i + 1, vec![x, y, y, x])]);
+                        partition.push(vec![(i, vec![x, x, y, y]), (i + 1, vec![x, y, y, y])]);
+                    }
+                }
+            }
+
+            partition
+        }
+        Condition::Jonsson(length) => {
+            let mut partition = Vec::new();
+
+            for &x in vertices {
+                let mut id = (0..=(2 * length)).map(|i| (i, vec![x, x, x])).collect_vec();
+
+                for &y in vertices {
+                    if x == y {
+                        continue;
+                    }
+                    for i in 0..length {
+                        partition.push(vec![(2 * i, vec![x, y, y]), (2 * i + 1, vec![x, y, y])]);
+                        partition
+                            .push(vec![(2 * i + 1, vec![x, x, y]), (2 * i + 2, vec![x, x, y])]);
+                    }
+                    for i in 0..=(2 * length) {
+                        id.push((i, vec![x, y, x]));
+                    }
+                    partition.push(vec![(0, vec![x, x, x]), (0, vec![x, x, y])]);
+                    partition.push(vec![
+                        (2 * length, vec![y, y, y]),
+                        (2 * length, vec![x, y, y]),
+                    ]);
+                }
+                partition.push(id);
+            }
+
+            partition
+        }
+        Condition::KearnesKiss(length) => {
+            let mut partition = Vec::new();
+
+            for &x in vertices {
+                let mut id = (0..=length).map(|i| (i, vec![x, x, x])).collect_vec();
+
+                for &y in vertices {
+                    for i in (0..length).step_by(2) {
+                        partition.push(vec![(i, vec![x, y, y]), (i + 1, vec![x, y, y])]);
+                        partition.push(vec![(i, vec![x, y, x]), (i + 1, vec![x, y, x])]);
+                    }
+                    for i in (0..length).skip(1).step_by(2) {
+                        partition.push(vec![(i, vec![x, x, y]), (i + 1, vec![x, x, y])]);
+                    }
+                    for &z in vertices {
+                        id.push((0, vec![x, y, z]));
+                        id.push((length, vec![y, z, x]));
+                    }
+                }
+                partition.push(id);
+            }
+
+            partition
+        }
+        Condition::HobbyMcKenzie(n) => {
+            let mut partition = Vec::new();
+
+            for &x in vertices {
+                partition.push((0..(2 * n + 3)).map(|i| (i, vec![x, x, x])).collect_vec());
+
+                for &y in vertices {
+                    if x == y {
+                        continue;
+                    }
+                    partition.push(vec![(n, vec![x, y, y]), (n + 1, vec![x, y, y])]);
+                    partition.push(vec![(n + 1, vec![x, x, y]), (n + 2, vec![x, x, y])]);
+
+                    for j in (0..n).step_by(2) {
+                        partition.push(vec![(j, vec![x, y, y]), (j + 1, vec![x, y, y])]);
+                        partition
+                            .push(vec![(j + n + 2, vec![x, y, y]), (j + n + 3, vec![x, y, y])]);
+                        partition
+                            .push(vec![(j + n + 2, vec![x, y, x]), (j + n + 3, vec![x, y, x])]);
+                    }
+                    for j in (0..n).skip(1).step_by(2) {
+                        partition.push(vec![(j, vec![x, x, y]), (j + 1, vec![x, x, y])]);
+                        partition.push(vec![(j, vec![x, y, x]), (j + 1, vec![x, y, x])]);
+                        partition
+                            .push(vec![(j + n + 2, vec![x, x, y]), (j + n + 3, vec![x, x, y])]);
+                    }
+                }
+            }
+
+            partition
+        }
+        Condition::HagemannMitschke(n) => {
+            let mut partition = Vec::new();
+
+            for &x in vertices {
+                for &y in vertices {
+                    for i in 0..n {
+                        partition.push(vec![(i, vec![x, x, y]), (i + 1, vec![x, y, y])]);
+                    }
+                }
+            }
+
+            partition
+        }
+    }
+}
+
+fn wnu(g: &[usize], k: usize) -> Partition<(usize, Vec<usize>)> {
+    nu_partition(k, g, true)
+}
+
+fn nu(g: &[usize], k: usize) -> Partition<(usize, Vec<usize>)> {
+    nu_partition(k, g, false)
+}
+
+fn majority(g: &[usize]) -> Partition<(usize, Vec<usize>)> {
+    nu_partition(3, g, true)
+}
+
+fn nu_partition(arity: usize, g: &[usize], weak: bool) -> Partition<(usize, Vec<usize>)> {
+    let mut partition = Vec::new();
+
+    for &v in g {
+        let mut vec = Vec::new();
+
+        for &w in g {
+            if v == w {
+                continue;
+            }
+            let mut eq_class = Vec::new();
+
+            for k in 0..arity {
+                let mut tuple = (0, vec![v; arity]);
+                tuple.1[k] = w;
+                eq_class.push(tuple);
+            }
+            if weak {
+                partition.push(eq_class);
+            } else {
+                vec.push(eq_class);
+            }
+        }
+        if !weak {
+            partition.push(vec.into_iter().flatten().collect_vec());
+        }
+    }
+
+    partition
+}
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ParseConditionError;
+
+impl std::fmt::Display for ParseConditionError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "No condition registered with that name")
+    }
+}
+
+impl std::error::Error for ParseConditionError {}
 
 /// `AdjMap`<V> is a directed graph datastructure using an adjacency list
 /// representation.
