@@ -18,7 +18,7 @@ pub fn cli() -> App<'static, 'static> {
                 .value_name("G")
                 .takes_value(true)
                 .required(true)
-                .help("Check for homomorphism from graph G..."),
+                .help("Check for a homomorphism from graph G..."),
         )
         .arg(
             Arg::with_name("to")
