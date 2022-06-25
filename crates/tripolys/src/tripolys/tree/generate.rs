@@ -4,6 +4,42 @@ use crate::tree::{is_core_tree, is_rooted_core_tree, Tree};
 use itertools::Itertools;
 use rayon::prelude::*;
 
+/// Returns every set of `k` integers that sum up to `n` sorted in ascending order.
+///
+/// E.g. `calculate_addends(6, 3)` yields [[1, 1, 4], [1, 2, 3], [2, 2, 2]].
+fn addends(n: usize, k: usize) -> Vec<Vec<usize>> {
+    fn inner(pos: usize, left: usize, k: usize, last: usize) -> Vec<Vec<usize>> {
+        // Base Case
+        if pos == k {
+            if left == 0 {
+                return vec![vec![]];
+            } else {
+                return vec![];
+            }
+        }
+
+        if left == 0 {
+            return vec![];
+        }
+
+        let mut addends = Vec::new();
+
+        for i in 1..=left {
+            if i > last {
+                break;
+            }
+            for mut sub in inner(pos + 1, left - i, k, i) {
+                sub.push(i);
+                addends.push(sub);
+            }
+        }
+
+        addends
+    }
+
+    inner(0, n, k, n)
+}
+
 #[derive(Clone, Copy)]
 pub struct TreeGenSettings {
     /// Number of vertices to start at
@@ -59,19 +95,15 @@ impl TreeGenerator {
         }
     }
 
-    /// Returns all unique sets of `n` rooted trees whose number of nodes sum
-    /// up to `total`. The trees are sorted by their number of nodes in
-    /// ascending order.
-    fn rooted_trees(
-        &self,
-        nvertices: usize,
-        n: usize,
-    ) -> impl Iterator<Item = Vec<Arc<Tree>>> + '_ {
-        addends(nvertices, n)
+    /// Returns all unique sets of `k` rooted trees whose number of nodes sum up
+    /// to `n`. The trees are sorted by their number of nodes in ascending
+    /// order.
+    fn rooted_trees(&self, n: usize, k: usize) -> impl Iterator<Item = Vec<Arc<Tree>>> + '_ {
+        addends(n, k)
             .into_iter()
-            .flat_map(|vec| {
-                vec.into_iter()
-                    .map(|idx| self.rooted_trees[idx - 1].iter().cloned())
+            .flat_map(|set| {
+                set.into_iter()
+                    .map(|nvertices| self.rooted_trees[nvertices - 1].iter().cloned())
                     .multi_cartesian_product()
             })
             .filter(|vec| vec.windows(2).all(|w| w[0] <= w[1])) // excludes permutations
@@ -190,63 +222,10 @@ fn connect_by_edge(tree: &Arc<Tree>, child: &Arc<Tree>) -> Vec<Tree> {
 /// adjacent to each of their roots.
 fn connect_by_vertex(children: &[Arc<Tree>]) -> Vec<Tree> {
     (0..children.len())
-        .map(|_| [true, false].into_iter())
+        .map(|_| [true, false])
         .multi_cartesian_product()
-        .map(|edges| children.iter().cloned().zip(edges.into_iter()))
+        .map(|edges| children.iter().cloned().zip(edges))
         .filter(|v| v.clone().tuple_windows().all(|(a, b)| a <= b)) // excludes permutations
         .map(|t| t.collect())
         .collect()
 }
-
-/// Returns every set of `k` integers that sum up to `n` sorted in ascending order.
-///
-/// E.g. `calculate_addends(6, 3)` yields [[1, 1, 4], [1, 2, 3], [2, 2, 2]].
-fn addends(n: usize, k: usize) -> Vec<Vec<usize>> {
-    fn inner(pos: usize, left: usize, k: usize, last: usize) -> Vec<Vec<usize>> {
-        // Base Case
-        if pos == k {
-            if left == 0 {
-                return vec![vec![]];
-            } else {
-                return vec![];
-            }
-        }
-
-        if left == 0 {
-            return vec![];
-        }
-
-        let mut addends = Vec::new();
-
-        for i in 1..=left {
-            if i > last {
-                break;
-            }
-            for mut sub in inner(pos + 1, left - i, k, i) {
-                sub.push(i);
-                addends.push(sub);
-            }
-        }
-
-        addends
-    }
-
-    inner(0, n, k, n)
-}
-
-#[derive(Debug)]
-pub enum TreeGenError {
-    TreeNumVertices(usize),
-    TriadNumVertices(usize),
-}
-
-impl std::fmt::Display for TreeGenError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match *self {
-            TreeGenError::TreeNumVertices(n) => write!(f, "There is no tree with {} nodes", n),
-            TreeGenError::TriadNumVertices(n) => write!(f, "There is no triad with {} nodes", n),
-        }
-    }
-}
-
-impl std::error::Error for TreeGenError {}
