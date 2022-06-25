@@ -16,15 +16,48 @@ type Partition<V> = Vec<Vec<V>>;
 
 #[derive(Debug, PartialEq, Copy, Clone)]
 pub enum Condition {
+    /// - p(x,y,y) ≈ q(y,x,x) ≈ q(x,x,y)
+    /// - p(x,y,x) ≈ q(x,y,x)
     Kmm,
+    /// - s(r,a,r,e) ≈ s(a,r,e,a)
     Siggers,
+    /// - m(x,x,y) ≈ m(x,y,x) ≈ m(y,x,x) ≈ m(x,x,x) ≈ x
     Majority,
+    /// - m(x,x,y) ≈ m(x,y,x) ≈ m(y,x,x) = x
     Nu(usize),
+    /// - m(x,x,y) ≈ m(x,y,x) ≈ m(y,x,x)
     Wnu(usize),
+    /// - f<sub>0</sub>(x,y,y,z) ≈ x
+    /// - f<sub>i</sub>(x,x,y,x) ≈ f<sub>i+1</sub> (x,y,y,x) for all i ∈ {0,…,n−1}
+    /// - f<sub>i</sub>(x,x,y,y) ≈ f<sub>i+1</sub> (x,y,y,y) for all i ∈ {0,…,n−1}
+    /// - f<sub>n</sub>(x,x,y,z) ≈ z.
     NoName(usize),
+    /// - j<sub>1</sub>(x,x,y)    = x
+    /// - j<sub>2i−1</sub>(x,y,y) = j<sub>2i</sub>(x,y,y)     for all i ∈ {1,…,n}
+    /// - j<sub>i</sub>(x,y,x)    = x                         for all i ∈ {1,…,2n + 1}
+    /// - j<sub>2i</sub>(x,x,y)   = j<sub>2i+1</sub>(x,x,y)   for all i ∈ {1,…,n}
+    /// - j<sub>2n+1</sub>(x,y,y) = y.
     Jonsson(usize),
+    /// - d<sub>0</sub> (x,y,z) ≈ x
+    /// - d<sub>i</sub> (x,y,y) ≈ d<sub>i+1</sub>(x,y,y)     for even i ∈ {0,1,…,n−1}
+    /// - d<sub>i</sub> (x,y,x) ≈ d<sub>i+1</sub>(x,y,x)     for even i ∈ {0,1,…,n−1}
+    /// - d<sub>i</sub> (x,x,y) ≈ d<sub>i+1</sub>(x,x,y)     for odd i ∈ {1, . . . , n − 1}
+    /// - d<sub>n</sub> (x,y,z) ≈ z
     KearnesKiss(usize),
+    /// - d<sub>0</sub>(x,y,z) = x
+    /// - d<sub>i</sub>(x,y,y) = d<sub>i+1</sub>(x,y,y)   for even i < n
+    /// - d<sub>i</sub>(x,x,y) = d<sub>i+1</sub>(x,x,y)   for odd i < n
+    /// - d<sub>i</sub>(x,y,x) = d<sub>i+1</sub>(x,y,x)   for odd i < n
+    /// - d<sub>n</sub>(x,y,y) = p(x,y,y)
+    /// - p(x,x,y)             = e<sub>0</sub>(x,x,y)
+    /// - e<sub>i</sub>(x,y,y) = e<sub>i+1</sub>(x,y,y)   for even i < n
+    /// - e<sub>i</sub>(x,x,y) = e<sub>i+1</sub>(x,x,y)   for odd i < n
+    /// - e<sub>i</sub>(x,y,x) = e<sub>i+1</sub>(x,y,x)   for even i < n
+    /// - e<sub>n</sub>(x,y,z) = z.
     HobbyMcKenzie(usize),
+    /// - p<sub>1</sub>(x,y,y) = x
+    /// - p<sub>i</sub>(x,x,y) = p<sub>i+1</sub>(x,y,y) for all i ∈ {1,…,n−1}
+    /// - p<sub>n</sub>(x,x,y) = y.
     HagemannMitschke(usize),
 }
 
