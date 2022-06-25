@@ -1,8 +1,7 @@
 //! A simple backtracking algorithm using MAC-3.
 
 use std::iter::FromIterator;
-
-use time::{Duration, OffsetDateTime};
+use std::time::{Duration, Instant};
 
 use crate::domains::{Dom, DomMap};
 use crate::problem::{Problem, Solution, Variable};
@@ -239,10 +238,10 @@ impl<'p, P: Problem> BTSolver<'p, P> {
         if_trace!(self.domains.debug_print());
 
         if_trace!("Preprocessing with AC-3");
-        let tstart = OffsetDateTime::now_utc();
+        let tstart = Instant::now();
         let ac = self.mac3(self.problem.arcs());
-        let tend = OffsetDateTime::now_utc();
-        stat!(self.ac3_time = tend - tstart);
+        let tend = tstart.elapsed();
+        stat!(self.ac3_time = tend);
 
         if_trace!(self.domains.debug_print());
 
@@ -258,10 +257,10 @@ impl<'p, P: Problem> BTSolver<'p, P> {
         }
 
         if ac {
-            let tstart = OffsetDateTime::now_utc();
+            let tstart = Instant::now();
             let _ = self.solve_inner(&mut out);
-            let tend = OffsetDateTime::now_utc();
-            stat!(self.mac3_time = tend - tstart);
+            let tend = tstart.elapsed();
+            stat!(self.mac3_time = tend);
         }
     }
 

@@ -9,5 +9,4 @@ default = []
 trace = []
 
 [dependencies]
-time = "0.2.26"
 num-traits = "0.2"
