@@ -1,5 +1,4 @@
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
-use time::OffsetDateTime;
 use tripolys::digraph::formats::to_edge_list;
 
 use std::io::{BufWriter, Write};
@@ -83,20 +82,20 @@ pub fn command(args: &ArgMatches) -> CmdResult {
         stats: Some(TreeGenStats::default()),
     };
 
-    let mut generator = TreeGenerator::with_config(config);
+    let mut generator = TreeGenerator::new(config);
 
     for num_vertices in start..=end {
         println!("\n> #vertices: {}", num_vertices);
         println!("  > Generating trees...");
-        let start = OffsetDateTime::now_utc();
+        let now = std::time::Instant::now();
         let trees = generator.generate();
-        let end = OffsetDateTime::now_utc();
-        println!("    - total_time: {}s", (end - start).as_seconds_f32());
+        println!("    - total_time: {:?}", now.elapsed());
         let dir_name = if num_vertices < 10 {
             String::from("0") + &num_vertices.to_string()
         } else {
             num_vertices.to_string()
         };
+        println!("#trees: {}", trees.len());
         let mut path = PathBuf::from(data_path).join(dir_name);
         if triad {
             path.push("triads");

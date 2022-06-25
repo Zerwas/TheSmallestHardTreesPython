@@ -1,6 +1,5 @@
 use clap::{App, Arg, ArgMatches, SubCommand};
 use colored::*;
-use time::OffsetDateTime;
 use tripolys::digraph::AdjMatrix;
 use tripolys::tree::is_core_tree;
 
@@ -44,9 +43,9 @@ pub fn command(args: &ArgMatches) -> CmdResult {
 
         if args.is_present("core") {
             println!("\n> Checking tree...");
-            let tstart = OffsetDateTime::now_utc();
+            let tstart = std::time::Instant::now();
             let result = is_core_tree(&tree);
-            let tend = OffsetDateTime::now_utc();
+            let tend = tstart.elapsed();
 
             if result {
                 println!("{}", format!("  ✓ {} is a core", s).green());
@@ -54,7 +53,7 @@ pub fn command(args: &ArgMatches) -> CmdResult {
                 println!("{}", format!("  ✘ {} is not a core", s).red());
             }
 
-            println!("\nComputation time: {}s", (tend - tstart).as_seconds_f32());
+            println!("\nComputation time: {:?}", tend);
         }
     }
     Ok(())
