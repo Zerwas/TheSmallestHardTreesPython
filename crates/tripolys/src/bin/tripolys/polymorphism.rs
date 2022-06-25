@@ -225,9 +225,9 @@ impl Serialize for Record {
         state.serialize_field("tree", &self.tree)?;
         state.serialize_field("found", &self.found)?;
         state.serialize_field("backtracks", &self.backtracks)?;
-        state.serialize_field("ac3_time", &format!("{}s", self.ac3_time.as_secs_f32()))?;
-        state.serialize_field("mac3_time", &format!("{}s", self.mac3_time.as_secs_f32()))?;
-        state.serialize_field("total_time", &format!("{}s", self.total_time.as_secs_f32()))?;
+        state.serialize_field("ac3_time", &format!("{:?}", self.ac3_time))?;
+        state.serialize_field("mac3_time", &format!("{:?}", self.mac3_time))?;
+        state.serialize_field("total_time", &format!("{:?}", self.total_time))?;
         state.end()
     }
 }

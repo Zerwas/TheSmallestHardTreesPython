@@ -4,7 +4,7 @@ use tripolys::digraph::formats::to_edge_list;
 use std::io::{BufWriter, Write};
 use std::path::PathBuf;
 
-use tripolys::tree::generate::{Config, Stats, TreeGenerator};
+use tripolys::tree::generate::{TreeGenSettings, TreeGenStats, TreeGenerator};
 
 use crate::CmdResult;
 
@@ -73,29 +73,29 @@ pub fn command(args: &ArgMatches) -> CmdResult {
         end
     };
 
-    let config = Config {
+    let config = TreeGenSettings {
         max_arity,
         core,
         triad,
         start,
         end,
-        stats: Some(Stats::default()),
+        stats: Some(TreeGenStats::default()),
     };
 
-    let mut generator = TreeGenerator::with_config(config);
+    let mut generator = TreeGenerator::new(config);
 
     for num_vertices in start..=end {
         println!("\n> #vertices: {}", num_vertices);
         println!("  > Generating trees...");
-        let start = std::time::Instant::now();
-        let trees = generator.next();
-        let end = start.elapsed();
-        println!("    - total_time: {}s", end.as_secs_f32());
+        let now = std::time::Instant::now();
+        let trees = generator.generate();
+        println!("    - total_time: {:?}", now.elapsed());
         let dir_name = if num_vertices < 10 {
             String::from("0") + &num_vertices.to_string()
         } else {
             num_vertices.to_string()
         };
+        println!("#trees: {}", trees.len());
         let mut path = PathBuf::from(data_path).join(dir_name);
         if triad {
             path.push("triads");

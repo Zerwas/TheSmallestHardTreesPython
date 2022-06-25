@@ -4,19 +4,44 @@ use crate::tree::{is_core_tree, is_rooted_core_tree, Tree};
 use itertools::Itertools;
 use rayon::prelude::*;
 
-// macro_rules! stat {
-//     ($c:ident . $field:ident $($t:tt)*) => {
-//         #[cfg(feature = "stats")]
-//         {
-//             if let Some(ref mut st) = $c.stats {
-//                 st . $field $($t)*;
-//             }
-//         }
-//     }
-// }
+/// Returns every set of `k` integers that sum up to `n` sorted in ascending order.
+///
+/// E.g. `calculate_addends(6, 3)` yields [[1, 1, 4], [1, 2, 3], [2, 2, 2]].
+fn addends(n: usize, k: usize) -> Vec<Vec<usize>> {
+    fn inner(pos: usize, left: usize, k: usize, last: usize) -> Vec<Vec<usize>> {
+        // Base Case
+        if pos == k {
+            if left == 0 {
+                return vec![vec![]];
+            } else {
+                return vec![];
+            }
+        }
+
+        if left == 0 {
+            return vec![];
+        }
+
+        let mut addends = Vec::new();
+
+        for i in 1..=left {
+            if i > last {
+                break;
+            }
+            for mut sub in inner(pos + 1, left - i, k, i) {
+                sub.push(i);
+                addends.push(sub);
+            }
+        }
+
+        addends
+    }
+
+    inner(0, n, k, n)
+}
 
 #[derive(Clone, Copy)]
-pub struct Config {
+pub struct TreeGenSettings {
     /// Number of vertices to start at
     pub start: usize,
     /// Number of vertices to end at (inclusive)
@@ -28,12 +53,12 @@ pub struct Config {
     /// Only enumerate triads
     pub triad: bool,
     /// Record statistics
-    pub stats: Option<Stats>,
+    pub stats: Option<TreeGenStats>,
 }
 
 /// Statistics from tree generation
 #[derive(Clone, Copy, Default)]
-pub struct Stats {
+pub struct TreeGenStats {
     /// Time for rooted core checks
     pub rcc_time: f32,
     /// Number of generated rooted trees
@@ -44,31 +69,14 @@ pub struct Stats {
     pub num_cc: usize,
 }
 
-impl Default for Config {
-    fn default() -> Config {
-        Config {
-            start: 1,
-            end: 10,
-            max_arity: 2,
-            core: true,
-            triad: false,
-            stats: Some(Stats::default()),
-        }
-    }
-}
-
 pub struct TreeGenerator {
     rooted_trees: Vec<Vec<Arc<Tree>>>,
-    config: Config,
+    settings: TreeGenSettings,
     nvertices: usize,
 }
 
 impl TreeGenerator {
-    pub fn new() -> TreeGenerator {
-        TreeGenerator::with_config(Config::default())
-    }
-
-    pub fn with_config(config: Config) -> TreeGenerator {
+    pub fn new(config: TreeGenSettings) -> TreeGenerator {
         assert!(
             !(config.triad && config.start < 4),
             "There is no triad with {} nodes",
@@ -83,19 +91,19 @@ impl TreeGenerator {
         TreeGenerator {
             rooted_trees: vec![vec![Arc::new(Tree::leaf())]],
             nvertices: config.start,
-            config,
+            settings: config,
         }
     }
 
-    /// Returns all unique sets of `n` rooted trees whose number of nodes sum
-    /// up to `total`. The trees are sorted by their number of nodes in
-    /// ascending order.
-    fn rooted_trees(&self, total: usize, n: usize) -> impl Iterator<Item = Vec<Arc<Tree>>> + '_ {
-        addends(total, n)
+    /// Returns all unique sets of `k` rooted trees whose number of nodes sum up
+    /// to `n`. The trees are sorted by their number of nodes in ascending
+    /// order.
+    fn rooted_trees(&self, n: usize, k: usize) -> impl Iterator<Item = Vec<Arc<Tree>>> + '_ {
+        addends(n, k)
             .into_iter()
-            .flat_map(|vec| {
-                vec.into_iter()
-                    .map(|idx| self.rooted_trees[idx - 1].iter().cloned())
+            .flat_map(|set| {
+                set.into_iter()
+                    .map(|nvertices| self.rooted_trees[nvertices - 1].iter().cloned())
                     .multi_cartesian_product()
             })
             .filter(|vec| vec.windows(2).all(|w| w[0] <= w[1])) // excludes permutations
@@ -107,7 +115,7 @@ impl TreeGenerator {
             // let mut rcc_time = time::OffsetDateTime::now_utc();
             let mut num_rcc = 0;
 
-            for arity in 1..self.config.max_arity {
+            for arity in 1..self.settings.max_arity {
                 let treenagers = self
                     .rooted_trees(step - 1, arity)
                     .par_bridge()
@@ -115,11 +123,11 @@ impl TreeGenerator {
                     .collect::<Vec<_>>();
 
                 num_rcc += treenagers.len();
-                // let start = time::OffsetDateTime::now_utc();
+                // let start = Instant::now();
                 let filtered = treenagers
                     .into_par_iter()
                     .filter_map(|child| {
-                        if !self.config.core || is_rooted_core_tree(&child) {
+                        if !self.settings.core || is_rooted_core_tree(&child) {
                             Some(Arc::new(child))
                         } else {
                             None
@@ -127,12 +135,12 @@ impl TreeGenerator {
                     })
                     .collect::<Vec<_>>();
 
-                // rc_time += start.elapsed(); TODO
+                // rc_time += start.elapsed();
                 trees.push(filtered);
             }
             let trees = trees.into_iter().flatten().collect_vec();
 
-            if let Some(mut stats) = self.config.stats {
+            if let Some(mut stats) = self.settings.stats {
                 // stats.rcc_time = rcc_time; TODO
                 stats.num_rcc = num_rcc;
             }
@@ -143,7 +151,7 @@ impl TreeGenerator {
     fn generate_trees(&mut self) -> Vec<Tree> {
         self.generate_rooted_trees();
 
-        if self.config.triad {
+        if self.settings.triad {
             self.rooted_trees(self.nvertices - 1, 3)
                 .filter(|arms| arms.iter().all(|arm| arm.is_path()))
                 .flat_map(|arms| connect_by_vertex(&arms))
@@ -152,7 +160,7 @@ impl TreeGenerator {
         } else {
             // A tree with centre is a rooted tree where at least two children of the root
             // have height d−1
-            let centered = (2..=self.config.max_arity)
+            let centered = (2..=self.settings.max_arity)
                 .flat_map(|arity| {
                     self.rooted_trees(self.nvertices - 1, arity)
                         .flat_map(|children| connect_by_vertex(&children))
@@ -170,7 +178,7 @@ impl TreeGenerator {
         }
     }
 
-    pub fn next(&mut self) -> Vec<Tree> {
+    pub fn generate(&mut self) -> Vec<Tree> {
         if self.nvertices == 1 {
             return vec![Tree::leaf()];
         }
@@ -178,18 +186,11 @@ impl TreeGenerator {
         let trees = self.generate_trees();
 
         let num_cc = trees.len();
-        // let mut cc_time = Duration::from_secs(0);
-        let filter = |t: &Tree| {
-            // let start = Instant::now();
-            let p = is_core_tree(t);
-            // cc_time += start.elapsed();
-            p
-        };
         let filtered = trees
             .into_par_iter()
-            .filter(|t| !self.config.core || filter(t))
+            .filter(|t| !self.settings.core || is_core_tree(t))
             .collect::<Vec<_>>();
-        if let Some(mut stats) = self.config.stats {
+        if let Some(mut stats) = self.settings.stats {
             // stats.cc_time = cc_time; TODO
             stats.num_cc = num_cc;
         }
@@ -221,57 +222,10 @@ fn connect_by_edge(tree: &Arc<Tree>, child: &Arc<Tree>) -> Vec<Tree> {
 /// adjacent to each of their roots.
 fn connect_by_vertex(children: &[Arc<Tree>]) -> Vec<Tree> {
     (0..children.len())
-        .map(|_| [true, false].into_iter())
+        .map(|_| [true, false])
         .multi_cartesian_product()
-        .map(|edges| children.iter().cloned().zip(edges.into_iter()))
+        .map(|edges| children.iter().cloned().zip(edges))
         .filter(|v| v.clone().tuple_windows().all(|(a, b)| a <= b)) // excludes permutations
         .map(|t| t.collect())
         .collect()
 }
-
-/// Returns every set of `n` integers that sum up to `sum` sorted in ascending order.
-///
-/// E.g. `addends(6, 3)` yields [[1, 1, 4], [1, 2, 3], [2, 2, 2]].
-fn addends(sum: usize, n: usize) -> Vec<Vec<usize>> {
-    fn inner(sum: usize, n: usize, last: usize) -> Vec<Vec<usize>> {
-        if n == 0 {
-            return vec![vec![]];
-        }
-
-        let mut result = Vec::new();
-        let start = ((sum) as f32 / n as f32).ceil() as usize;
-        let end = std::cmp::min(sum - n + 1, last);
-
-        for i in start..=end {
-            for mut child in inner(sum - i, n - 1, i) {
-                child.push(i);
-                result.push(child);
-            }
-        }
-
-        result
-    }
-
-    if n > sum {
-        return vec![];
-    }
-
-    inner(sum, n, usize::MAX)
-}
-
-#[derive(Debug)]
-pub enum NumNodesError {
-    Tree(usize),
-    Triad(usize),
-}
-
-impl std::fmt::Display for NumNodesError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match *self {
-            NumNodesError::Tree(n) => write!(f, "There is no tree with {} nodes", n),
-            NumNodesError::Triad(n) => write!(f, "There is no triad with {} nodes", n),
-        }
-    }
-}
-
-impl std::error::Error for NumNodesError {}
