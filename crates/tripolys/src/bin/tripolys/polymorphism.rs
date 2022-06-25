@@ -135,7 +135,7 @@ pub fn command(args: &ArgMatches) -> CmdResult {
 
     if let Some(graph) = args.value_of("graph") {
         let h: AdjMatrix = parse_graph(graph)?;
-        let instance = metaproblem.instance(&h);
+        let instance = metaproblem.instance(&h)?;
         let mut solver = BTSolver::new(&instance);
 
         println!("\n> Checking for polymorphisms...");
@@ -171,12 +171,14 @@ pub fn command(args: &ArgMatches) -> CmdResult {
     let start = std::time::Instant::now();
 
     graphs.into_par_iter().for_each(|h| {
-        let instance = metaproblem.instance(&h);
+        let instance = metaproblem.instance(&h).unwrap();
         let mut solver = BTSolver::new(&instance);
         let found = solver.solution_exists();
 
         if filter.map_or(true, |v| !(v ^ found)) {
-            log.lock().unwrap().add(h, found, solver.stats().unwrap());
+            if let Some(stats) = solver.stats() {
+                log.lock().unwrap().add(h, found, stats);
+            }
         }
     });
     println!("    - total_time: {:?}", start.elapsed());

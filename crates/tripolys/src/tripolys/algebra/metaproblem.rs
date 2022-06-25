@@ -58,6 +58,18 @@ impl FromStr for Condition {
         }
     }
 }
+
+#[derive(Debug, Clone, PartialEq)]
+pub struct ParseConditionError;
+
+impl std::fmt::Display for ParseConditionError {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        write!(f, "No condition registered with that name")
+    }
+}
+
+impl std::error::Error for ParseConditionError {}
+
 /// The problem of deciding whether a graph has a given type of polymorphism(s).
 #[derive(Clone, Copy, Debug)]
 pub struct MetaProblem {
@@ -92,22 +104,24 @@ impl MetaProblem {
         self
     }
 
-    pub fn instance(self, h: &AdjMatrix) -> Instance {
+    pub fn instance(self, h: &AdjMatrix) -> Result<Instance, Error> {
         let condition = self.condition;
-        let levels = if self.level_wise { levels(h) } else { None };
+        let levels = if self.level_wise {
+            levels(h).ok_or(Error::Unbalanced)?
+        } else {
+            vec![]
+        };
         // Indicator graph construction
         let mut indicator_graph = arities(condition)
             .into_iter()
             .enumerate()
             .flat_map(|(i, k)| h.edges().power(k).map(move |(u, v)| ((i, u), (i, v))))
-            .filter(|((_, u), _)| {
-                !self.level_wise || u.iter().map(|v| levels.as_ref().unwrap()[*v]).all_equal()
-            })
+            .filter(|((_, u), _)| !self.level_wise || u.iter().map(|v| levels[*v]).all_equal())
             .collect::<AdjMap<_>>();
 
-        for set in partition(condition, &h.vertices().collect_vec()) {
-            for i in 1..set.len() {
-                indicator_graph.contract_vertices(&set[0], &set[i]);
+        for class in eq_classes(condition, &h.vertices().collect_vec()) {
+            for i in 1..class.len() {
+                indicator_graph.contract_vertices(&class[0], &class[i]);
             }
         }
 
@@ -146,9 +160,24 @@ impl MetaProblem {
             }
         });
 
-        instance
+        Ok(instance)
     }
 }
+
+#[derive(Debug, Clone, PartialEq)]
+pub enum Error {
+    Unbalanced,
+}
+
+impl std::fmt::Display for Error {
+    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        match self {
+            Error::Unbalanced => write!(f, "The given graph is not balanced"),
+        }
+    }
+}
+
+impl std::error::Error for Error {}
 
 fn arities(condition: Condition) -> Vec<usize> {
     match condition {
@@ -247,7 +276,7 @@ fn precolor(condition: Condition, (f, v): &(usize, Vec<usize>)) -> Option<usize>
     }
 }
 
-fn partition(condition: Condition, vertices: &[usize]) -> Partition<(usize, Vec<usize>)> {
+fn eq_classes(condition: Condition, vertices: &[usize]) -> Partition<(usize, Vec<usize>)> {
     match condition {
         Condition::Kmm => {
             let mut partition = Vec::new();
@@ -290,9 +319,9 @@ fn partition(condition: Condition, vertices: &[usize]) -> Partition<(usize, Vec<
             }
             vec
         }
-        Condition::Majority => majority(vertices),
-        Condition::Nu(arity) => nu(vertices, arity),
-        Condition::Wnu(arity) => wnu(vertices, arity),
+        Condition::Majority => majority_eq_classes(vertices),
+        Condition::Nu(arity) => nu_eq_classes(vertices, arity),
+        Condition::Wnu(arity) => wnu_eq_classes(vertices, arity),
         Condition::NoName(length) => {
             let mut partition = Vec::new();
 
@@ -407,19 +436,19 @@ fn partition(condition: Condition, vertices: &[usize]) -> Partition<(usize, Vec<
     }
 }
 
-fn wnu(g: &[usize], k: usize) -> Partition<(usize, Vec<usize>)> {
-    nu_partition(k, g, true)
+fn wnu_eq_classes(g: &[usize], k: usize) -> Partition<(usize, Vec<usize>)> {
+    nu_eq_class_helper(k, g, true)
 }
 
-fn nu(g: &[usize], k: usize) -> Partition<(usize, Vec<usize>)> {
-    nu_partition(k, g, false)
+fn nu_eq_classes(g: &[usize], k: usize) -> Partition<(usize, Vec<usize>)> {
+    nu_eq_class_helper(k, g, false)
 }
 
-fn majority(g: &[usize]) -> Partition<(usize, Vec<usize>)> {
-    nu_partition(3, g, true)
+fn majority_eq_classes(g: &[usize]) -> Partition<(usize, Vec<usize>)> {
+    nu_eq_class_helper(3, g, true)
 }
 
-fn nu_partition(arity: usize, g: &[usize], weak: bool) -> Partition<(usize, Vec<usize>)> {
+fn nu_eq_class_helper(arity: usize, g: &[usize], weak: bool) -> Partition<(usize, Vec<usize>)> {
     let mut partition = Vec::new();
 
     for &v in g {
@@ -449,17 +478,6 @@ fn nu_partition(arity: usize, g: &[usize], weak: bool) -> Partition<(usize, Vec<
 
     partition
 }
-
-#[derive(Debug, Clone, PartialEq)]
-pub struct ParseConditionError;
-
-impl std::fmt::Display for ParseConditionError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        write!(f, "No condition registered with that name")
-    }
-}
-
-impl std::error::Error for ParseConditionError {}
 
 /// `AdjMap`<V> is a directed graph datastructure using an adjacency list
 /// representation.
