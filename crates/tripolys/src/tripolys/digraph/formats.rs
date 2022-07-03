@@ -1,11 +1,11 @@
-use std::error::Error;
 use std::io::{Read, Write};
 use std::{fmt, io, num};
 
 use itertools::Itertools;
+use thiserror::Error;
 
 use super::classes::Buildable;
-use super::traits::Digraph;
+use super::traits::{Digraph, Edges};
 
 /// Prints the graph in dot format.
 pub fn to_dot<'a, G, W>(g: &'a G, output: &mut W) -> Result<(), io::Error>
@@ -47,16 +47,21 @@ where
     Ok(())
 }
 
-// /// Prints the graph in csv format.
-// pub fn to_csv<G, W>(g: &G, output: &mut W) -> Result<(), io::Error> {
-//     let bytes = g
-//         .edges()
-//         .flat_map(|(u, v)| format!("{:?};{:?}\n", u, v).into_bytes())
-//         .collect_vec();
-//     output.write_all(&bytes)?;
+/// Prints the graph in csv format.
+pub fn to_csv<'a, G, W>(g: &'a G, output: &mut W) -> Result<(), io::Error>
+where
+    G: Edges<'a>,
+    G::Vertex: std::fmt::Display,
+    W: std::io::Write,
+{
+    let bytes = g
+        .edges()
+        .flat_map(|(u, v)| format!("{};{}\n", u, v).into_bytes())
+        .collect_vec();
+    output.write_all(&bytes)?;
 
-//     Ok(())
-// }
+    Ok(())
+}
 
 /// Reads a graph from csv format.
 pub fn from_csv<G, R>(mut read: R) -> Result<G, CsvError>
@@ -96,33 +101,12 @@ pub fn from_edge_list<G: FromIterator<(usize, usize)>>(s: &str) -> G {
         .collect()
 }
 
-impl std::fmt::Display for CsvError {
-    fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
-        match *self {
-            CsvError::MissingSeparator(i) => write!(f, "Separator missing in line {}", i),
-            CsvError::Io(ref err) => err.fmt(f),
-            CsvError::Parse(ref err) => err.fmt(f),
-        }
-    }
-}
-
-impl From<num::ParseIntError> for CsvError {
-    fn from(err: num::ParseIntError) -> CsvError {
-        CsvError::Parse(err)
-    }
-}
-
-impl From<io::Error> for CsvError {
-    fn from(err: io::Error) -> CsvError {
-        CsvError::Io(err)
-    }
-}
-
-impl Error for CsvError {}
-
-#[derive(Debug)]
+#[derive(Error, Debug)]
 pub enum CsvError {
+    #[error("Separator missing in line {0}")]
     MissingSeparator(usize),
-    Io(io::Error),
-    Parse(num::ParseIntError),
+    #[error("{0}")]
+    Io(#[from] io::Error),
+    #[error("{0}")]
+    Parse(#[from] num::ParseIntError),
 }

@@ -93,7 +93,7 @@ macro_rules! stat {
 
 /// Backtracking solver
 #[derive(Clone, Debug)]
-pub struct BTSolver<'p, P: Problem> {
+pub struct BackTrackSolver<'p, P: Problem> {
     problem: &'p P,
     domains: DomMap,
     neighbors: Vec<Vec<(Variable, Variable)>>,
@@ -104,21 +104,21 @@ pub struct BTSolver<'p, P: Problem> {
     trails: Stack<Trail>,
 }
 
-impl<'p, P: Problem> BTSolver<'p, P> {
+impl<'p, P: Problem> BackTrackSolver<'p, P> {
     /// Constructs a new `BTSolver<p', P>` from `problem`.
-    pub fn new(problem: &'p P) -> BTSolver<P> {
-        BTSolver::with_config(problem, SolveSettings::default())
+    pub fn new(problem: &'p P) -> BackTrackSolver<P> {
+        BackTrackSolver::with_config(problem, SolveSettings::default())
     }
 
     /// Constructs a new `BTSolver<p', P>` from `problem`.
-    pub fn with_config(problem: &'p P, config: SolveSettings) -> BTSolver<P> {
+    pub fn with_config(problem: &'p P, config: SolveSettings) -> BackTrackSolver<P> {
         let mut neighbors = vec![Vec::new(); problem.size()];
 
         for arc in problem.arcs() {
             neighbors[*arc.1].push(arc);
         }
 
-        BTSolver {
+        BackTrackSolver {
             problem,
             domains: DomMap::new(problem),
             neighbors,
@@ -210,7 +210,7 @@ impl<'p, P: Problem> BTSolver<'p, P> {
     }
 }
 
-impl<'p, P: Problem> BTSolver<'p, P> {
+impl<'p, P: Problem> BackTrackSolver<'p, P> {
     /// Returns true, if the there exists a solution to the problem.
     pub fn solution_exists(&mut self) -> bool {
         self.solve_first().is_some()

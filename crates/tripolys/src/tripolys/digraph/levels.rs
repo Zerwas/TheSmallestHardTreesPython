@@ -2,7 +2,7 @@ use crate::hcoloring::Instance;
 
 use super::traits::{Digraph, GraphType};
 use super::{classes::directed_path, AdjMatrix};
-use arx::solver::BTSolver;
+use arx::solver::BackTrackSolver;
 
 pub fn levels<'a, G>(g: &'a G) -> Option<Vec<usize>>
 where
@@ -13,7 +13,7 @@ where
         let h: AdjMatrix = directed_path(k + 1);
         let problem = Instance::new(g, h);
 
-        if let Some(sol) = BTSolver::new(&problem).solve_first() {
+        if let Some(sol) = BackTrackSolver::new(&problem).solve_first() {
             return Some(sol.into_iter().map(|v| *v).collect());
         }
     }

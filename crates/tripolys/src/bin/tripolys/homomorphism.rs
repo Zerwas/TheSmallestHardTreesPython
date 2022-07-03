@@ -1,6 +1,6 @@
 use std::{collections::HashMap, fmt::Debug, num::ParseIntError};
 
-use arx::solver::BTSolver;
+use arx::solver::BackTrackSolver;
 use clap::{App, AppSettings, Arg, ArgMatches, SubCommand};
 use colored::Colorize;
 use tripolys::hcoloring::Instance;
@@ -66,7 +66,7 @@ pub fn command(args: &ArgMatches) -> CmdResult {
     };
 
     println!("\n> Checking for homomorphism...");
-    let mut solver = BTSolver::new(&problem);
+    let mut solver = BackTrackSolver::new(&problem);
 
     if solver.solution_exists() {
         println!("{}", "  ✓ Exists\n".to_string().green());

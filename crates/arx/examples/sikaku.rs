@@ -26,7 +26,7 @@ use std::error::Error;
 use std::io::Read;
 use std::{fmt, io};
 
-use arx::solver::BTSolver;
+use arx::solver::BackTrackSolver;
 use arx::problem::*;
 
 fn try_main() -> Result<(), Box<dyn Error>> {
@@ -38,7 +38,7 @@ fn try_main() -> Result<(), Box<dyn Error>> {
 
     let problem = sikaku.to_problem();
     let mut solutions = Vec::new();
-    BTSolver::new(&problem).solve_all(|sol| solutions.push(sol));
+    BackTrackSolver::new(&problem).solve_all(|sol| solutions.push(sol));
 
     for soln in &solutions {
         problem.print_solution(soln);

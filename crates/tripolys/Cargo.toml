@@ -17,6 +17,7 @@ indexmap = "1.8.1"
 num-traits = "0.2"
 num-iter = "0.1.33"
 bimap = "0.6.2"
+thiserror = "1.0.31"
 
 [lib]
 name = "tripolys"

@@ -1,4 +1,4 @@
-use arx::solver::{BTSolver, SolveStats};
+use arx::solver::{BackTrackSolver, SolveStats};
 use clap::{App, AppSettings, Arg, ArgGroup, ArgMatches, SubCommand};
 use colored::*;
 use csv::WriterBuilder;
@@ -136,7 +136,7 @@ pub fn command(args: &ArgMatches) -> CmdResult {
     if let Some(graph) = args.value_of("graph") {
         let h: AdjMatrix = parse_graph(graph)?;
         let instance = metaproblem.instance(&h)?;
-        let mut solver = BTSolver::new(&instance);
+        let mut solver = BackTrackSolver::new(&instance);
 
         println!("\n> Checking for polymorphisms...");
 
@@ -172,7 +172,7 @@ pub fn command(args: &ArgMatches) -> CmdResult {
 
     graphs.into_par_iter().for_each(|h| {
         let instance = metaproblem.instance(&h).unwrap();
-        let mut solver = BTSolver::new(&instance);
+        let mut solver = BackTrackSolver::new(&instance);
         let found = solver.solution_exists();
 
         if filter.map_or(true, |v| !(v ^ found)) {

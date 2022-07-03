@@ -1,4 +1,4 @@
-use arx::solver::BTSolver;
+use arx::solver::BackTrackSolver;
 use clap::{App, Arg, ArgGroup, ArgMatches, SubCommand};
 use colored::*;
 use itertools::Itertools;
@@ -43,7 +43,7 @@ pub fn command(args: &ArgMatches) -> CmdResult {
 
     println!("\n> Checking graph...");
     let problem = Instance::new(h.clone(), h);
-    let mut solver = BTSolver::new(&problem);
+    let mut solver = BackTrackSolver::new(&problem);
     let mut sols = Vec::new();
     solver.solve_all(|sol| sols.push(sol));
 
