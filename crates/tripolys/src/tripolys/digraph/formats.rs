@@ -39,7 +39,7 @@ where
         if i != 0 {
             s.push(',');
         }
-        s.push_str(&format!("({},{})", u, v));
+        s.push_str(&format!("({};{})", u, v));
     }
     s.push(']');
     output.write_all(s.as_bytes())?;
