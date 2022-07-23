@@ -91,7 +91,7 @@ where
 }
 
 pub fn from_edge_list<G: FromIterator<(usize, usize)>>(s: &str) -> G {
-    s.split(&['[', ']', ',', '(', ')', '"'])
+    s.split(&['[', ']', ',', '(', ')', '"', ';'])
         .filter(|&x| !x.is_empty())
         .tuples()
         .map(|(u, v)| (u.parse::<usize>().unwrap(), v.parse::<usize>().unwrap()))
