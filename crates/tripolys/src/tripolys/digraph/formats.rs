@@ -35,10 +35,7 @@ where
     W: Write,
 {
     let mut s = String::from("[");
-    for (i, (u, v)) in g.edges().enumerate() {
-        if i != 0 {
-            s.push(',');
-        }
+    for (u, v) in g.edges() {
         s.push_str(&format!("({},{})", u, v));
     }
     s.push(']');
