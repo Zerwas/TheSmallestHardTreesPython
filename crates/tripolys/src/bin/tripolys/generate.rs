@@ -101,8 +101,9 @@ pub fn command(args: &ArgMatches) -> CmdResult {
             path.push("triads");
         }
         std::fs::create_dir_all(&path)?;
-        let file_name = if core { "cores.edges" } else { "trees.edges" };
+        let file_name = if core { "cores.csv" } else { "trees.csv" };
         let mut writer = BufWriter::new(std::fs::File::create(path.join(file_name))?);
+        writer.write_all("tree\n".as_bytes())?;
 
         for tree in trees {
             to_edge_list(&tree, &mut writer)?;
