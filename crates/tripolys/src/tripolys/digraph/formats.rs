@@ -36,7 +36,7 @@ where
 {
     let mut s = String::from("[");
     for (u, v) in g.edges() {
-        s.push_str(&format!("({};{})", u, v));
+        s.push_str(&format!("({},{})", u, v));
     }
     s.push(']');
     output.write_all(s.as_bytes())?;
