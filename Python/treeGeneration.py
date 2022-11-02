@@ -26,6 +26,12 @@ def drawGraph(G, phi=("asd", "")):
 
     time.sleep(0.5)
 
+def getTreesFromFile(file=None):
+    ls = open(file).readlines()
+
+    for l in ls:
+        T = nx.DiGraph(ast.literal_eval(l))
+        yield T
 
 def getCoreTreesFromFile(n, path=r'tripolys_data-master\\',filename=r'\cores.edges', filterSomeForOrientation=False):
 
