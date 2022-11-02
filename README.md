@@ -100,7 +100,17 @@ TODO
 
 ### The smallest tree not solved by Arc Consistency (Section 7.1.4)
 
-TODO
+The trees not solved by Arc Consistency are
+[TODO]
+and this is how you can test them:
+
+Using the Python code:
+```
+import treeGeneration
+Ts = treeGeneration.getTreesFromFile('name of file with trees')
+TsNoAC = [T for T in Ts if not treeGeneration.isTotallySymmetric(T)]
+```
+
 
 ### A tree not known to be in NL (Section 7.2.1)
 
@@ -112,6 +122,7 @@ and this is how you can test them:
 cd data/16
 tripolys polymorphism -i cores.edges -o majority_deny.csv -c majority -L -f deny
 ```
+
 (TODO how to run the tests for KK, HMcK, J?)
 
 ### Trees that might be P-hard (Section 7.2.2)
