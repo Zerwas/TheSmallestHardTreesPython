@@ -34,7 +34,7 @@ the commands to reproduce those results.
 
 Installation
 -----------------
-This code is compatible with Rust 2021.
+The Rust code is compatible with Rust 2021. The Python code is compatible with Python 3.7.
 
 ```
 git clone https://gitlab.com/WhatDothLife/tripolys.git
