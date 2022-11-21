@@ -30,7 +30,7 @@ Introduction
 In the paper *The Smallest Hard Trees*, we study computational and descriptive
 complexity of fixed-template CSPs for small orientations of trees. The paper
 contains a number of experimental results (see Section 7). Below you can find
-the commands to reproduce those results.
+the commands to reproduce those results. Edgelists of all trees with up to 20 vertices can be found [here](https://gitlab.com/WhatDothLife/tripolys_data/-/tree/master/).
 
 Installation
 -----------------
