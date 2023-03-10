@@ -1,6 +1,0 @@
-#+title: Todo
-
-* Tasks
-** TODO Record the number of consistency checks
-** TODO Refactor iterative backtracker
-** TODO Use std::ops::ControlFlow instead of BTError
